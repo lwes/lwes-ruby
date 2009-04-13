@@ -1,0 +1,13 @@
+swig -I${HOME}/lwes-0.22.2/src -ruby lwes.i
+
+ruby extconf.rb -I${HOME}/lwes-0.22.2/src
+or
+gcc -fPIC \
+ -I/usr/lib/ruby/1.8/i486-linux \
+ -I$HOME/lwes-0.22.2/src \
+ -L$HOME/lwes-0.22.2/src \
+ -g -O2 -c \
+ lwes_wrap.c -o lwes_wrap.o
+gcc -shared -o lwes.so lwes_wrap.o -lc -llwes
+
+make
