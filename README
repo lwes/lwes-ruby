@@ -1,13 +1,16 @@
-swig -I${HOME}/lwes-0.22.2/src -ruby lwes.i
+To build:
 
-ruby extconf.rb -I${HOME}/lwes-0.22.2/src
-or
-gcc -fPIC \
- -I/usr/lib/ruby/1.8/i486-linux \
- -I$HOME/lwes-0.22.2/src \
- -L$HOME/lwes-0.22.2/src \
- -g -O2 -c \
- lwes_wrap.c -o lwes_wrap.o
-gcc -shared -o lwes.so lwes_wrap.o -lc -llwes
+1. Make install lwes code. It will install by default into /usr/local. Make
+sure you note the version and change the commands below to match.
+
+2. Build the swig wrapper and library
+
+swig -I/usr/local/include/lwes-0/lwes-0.22.2 -ruby lwes.i
+
+ruby extconf.rb \
+ --with-lwes-include=/usr/local/include/lwes-0/lwes-0.22.2 \
+ --with-lwes-lib=/usr/local/lib
 
 make
+
+For examples on how to use lwes_functions.rb, look in the testing directory.
