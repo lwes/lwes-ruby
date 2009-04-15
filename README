@@ -5,12 +5,19 @@ sure you note the version and change the commands below to match.
 
 2. Build the swig wrapper and library
 
-swig -I/usr/local/include/lwes-0/lwes-0.22.2 -ruby lwes.i
+% swig -I/usr/local/include/lwes-0/lwes-0.22.2 -ruby lwes.i
 
-ruby extconf.rb \
+% ruby extconf.rb \
  --with-lwes-include=/usr/local/include/lwes-0/lwes-0.22.2 \
  --with-lwes-lib=/usr/local/lib
 
-make
+% make
+
+To create gem package:
+
+% gem build pkg/lwes_functions.gemspec
+
+
+
 
 For examples on how to use lwes_functions.rb, look in the testing directory.
