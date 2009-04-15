@@ -1,8 +1,10 @@
 Gem::Specification.new do |s|
   s.name = %q{lwes_functions}
   s.version = "0.0.1"
-  s.date = %q{2009-04-13}
+  s.platform = Gem::Platform::CURRENT
+  s.date = Time.now
   s.authors = ["Frank Maritato"]
+  s.has_rdoc = true
   s.email = %q{fmaritato@attinteractive.com}
   s.summary = %q{This provides ruby bindings to the lwes c library.}
   s.homepage = %q{http://www.lwes.org/}
