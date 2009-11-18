@@ -4,6 +4,11 @@
 #include <stdint.h>
 
 static VALUE cLWES_Emitter;
+static ID
+  id_int16, id_uint16,
+  id_int32, id_uint32,
+  id_int64, id_uint64,
+  id_to_i;
 
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
@@ -53,15 +58,167 @@ static VALUE rle_alloc(VALUE klass)
 	                        rle_mark, rle_free, rle);
 }
 
+/* returns an lwes_event depending on the value of name */
+static struct lwes_event * create_event(VALUE name)
+{
+	switch (TYPE(name)) {
+	case T_NIL:
+		return lwes_event_create_no_name(NULL);
+	case T_STRING:
+		return lwes_event_create(NULL, RSTRING_PTR(name));
+	}
+	rb_raise(rb_eArgError, "event name must be String or nil");
+	assert(0 && "rb_raise broke on us");
+	return NULL;
+}
+
 /*
+ * array contains two elements:
+ *   [ symbolic_type, number ]
+ * returns the return value of the underlying lwes_event_set_* call
+ */
+static int event_set_numeric(
+	struct lwes_event *e,
+	LWES_CONST_SHORT_STRING name,
+	VALUE array)
+{
+	VALUE *a;
+	ID type;
+
+	assert(TYPE(array) == T_ARRAY && "need array here");
+
+	if (RARRAY_LEN(array) != 2)
+		rb_raise(rb_eArgError, "expected a two element array");
+
+	a = RARRAY_PTR(array);
+	type = a[0];
+
+	if (type == id_uint16) {
+		unsigned tmp = NUM2UINT(a[1]);
+
+		if (tmp > UINT16_MAX)
+			rb_raise(rb_eArgError, ":uint16 too large: %u", tmp);
+		return lwes_event_set_U_INT_16(e, name, (LWES_U_INT_16)tmp);
+	} else if (type == id_int16) {
+		int tmp = NUM2INT(a[1]);
+
+		if (tmp > INT16_MAX)
+			rb_raise(rb_eArgError, ":int16 too large: %i", tmp);
+		else if (tmp < INT16_MIN)
+			rb_raise(rb_eArgError, ":int16 too small: %i", tmp);
+		else
+			return lwes_event_set_INT_16(e, name, (LWES_INT_16)tmp);
+	} else {
+		rb_raise(rb_eArgError, "unknown type");
+	}
+}
+
+/*
+ * kv - Array:
+ *   key => String,
+ *   key => [ numeric_type, Numeric ],
+ *   key => true,
+ *   key => false,
+ * memo - lwes_event pointer
+ */
+static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
+{
+	VALUE *tmp;
+	VALUE v;
+	struct lwes_event *e = (struct lwes_event *)memo;
+	LWES_CONST_SHORT_STRING name;
+
+	assert(TYPE(kv) == T_ARRAY &&
+	       "hash iteration not giving key-value pairs");
+	tmp = RARRAY_PTR(kv);
+	name = RSTRING_PTR(rb_obj_as_string(tmp[0]));
+
+	v = tmp[1];
+	switch (TYPE(v)) {
+	case T_TRUE:
+		if (lwes_event_set_BOOLEAN(e, name, TRUE) < 0)
+			rb_raise(rb_eRuntimeError,
+			         "failed to set boolean true for event");
+		break;
+	case T_FALSE:
+		if (lwes_event_set_BOOLEAN(e, name, FALSE) < 0)
+			rb_raise(rb_eRuntimeError,
+			         "failed to set boolean false for event");
+		break;
+	case T_ARRAY:
+		if (event_set_numeric(e, name, v) < 0)
+			rb_raise(rb_eRuntimeError,
+			         "failed to set numeric for event");
+		break;
+	case T_STRING:
+		if (lwes_event_set_STRING(e, name, RSTRING_PTR(v)) < 0)
+			rb_raise(rb_eRuntimeError,
+			         "failed to set string for event");
+		break;
+	default:
+		rb_p(v);
+	}
+
+	return Qnil;
+}
+
+static VALUE _emit_hash(VALUE _tmp)
+{
+	VALUE *tmp = (VALUE *)_tmp;
+	VALUE self = tmp[0];
+	VALUE event = tmp[1];
+	struct lwes_event *e = (struct lwes_event *)tmp[2];
+	int nr;
+
+	rb_iterate(rb_each, event, event_hash_iter_i, (VALUE)e);
+	if ((nr = lwes_emitter_emit(_rle(self)->e, e)) < 0) {
+		rb_raise(rb_eRuntimeError, "failed to emit event");
+	}
+
+	return event;
+}
+
+static VALUE _destroy_event(VALUE _e)
+{
+	struct lwes_event *e = (struct lwes_event *)_e;
+
+	assert(e && "destroying NULL event");
+	lwes_event_destroy(e);
+
+	return Qnil;
+}
+
+static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
+{
+	struct lwes_event *e = create_event(name);
+	VALUE tmp[3];
+
+	if (!e)
+		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
+
+	tmp[0] = self;
+	tmp[1] = event;
+	tmp[2] = (VALUE)e;
+	rb_ensure(_emit_hash, (VALUE)&tmp, _destroy_event, (VALUE)e);
+
+	return event;
+}
+
+/*
+ * XXX Not working yet
  * call-seq:
  *   emitter = LWES::Emitter.new
- *   emitter.emit(Hash.new)
+ *   emitter.emit("EventName", :foo => "HI")
  */
-static VALUE emitter_emit(VALUE self, VALUE event)
+static VALUE emitter_emit(VALUE self, VALUE name, VALUE event)
 {
-	if (TYPE(event) != T_HASH)
-		rb_raise(rb_eTypeError, "must be a hash");
+	switch (TYPE(event)) {
+	case T_HASH:
+		return emit_hash(self, name, event);
+	/* TODO T_STRUCT + esf support */
+	default:
+		rb_raise(rb_eTypeError, "must be a Hash"); /* or Struct */
+	}
 
 	return event;
 }
@@ -152,8 +309,18 @@ void init_emitter(void)
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_Emitter = rb_define_class_under(mLWES, "Emitter", rb_cObject);
 
-	rb_define_method(cLWES_Emitter, "emit", emitter_emit, 1);
+	rb_define_method(cLWES_Emitter, "emit", emitter_emit, 2);
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
+
+#define MKID(T) id_##T = ID2SYM(rb_intern(#T))
+	MKID(int16);
+	MKID(uint16);
+	MKID(int32);
+	MKID(uint32);
+	MKID(int64);
+	MKID(uint64);
+	MKID(to_i);
+#undef MKID
 }

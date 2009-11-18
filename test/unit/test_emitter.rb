@@ -43,12 +43,19 @@ class TestEmitter < Test::Unit::TestCase
 
   def test_emit_invalid
     emitter = LWES::Emitter.new(@options)
-    assert_raises(TypeError) { emitter.emit nil }
+    assert_raises(TypeError) { emitter.emit "Invalid", nil }
   end
 
-  def test_emit_hash
+  def test_emit_empty_hash
     emitter = LWES::Emitter.new(@options)
-    assert_nothing_raised { emitter.emit(Hash.new) }
+    assert_nothing_raised { emitter.emit("Valid", Hash.new) }
+  end
+
+  def test_emit_nameless_hashes
+    emitter = LWES::Emitter.new(@options)
+    assert_nothing_raised {
+      emitter.emit("Nameless", { :foo => "FOO", :nr => [ :int16, 50 ] })
+    }
   end
 
   def test_close
