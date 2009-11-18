@@ -36,6 +36,7 @@ static void rle_free(void *ptr)
 
 	if (rle->e)
 		lwes_emitter_destroy(rle->e);
+	rle->e = NULL;
 }
 
 /* called by the GC when object is allocated */
