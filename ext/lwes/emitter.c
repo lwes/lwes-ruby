@@ -1,3 +1,7 @@
+#include <lwes.h>
+#include <ruby.h>
+#include <assert.h>
+
 static VALUE cLWES_Emitter;
 
 /* the underlying struct for LWES::Emitter */
@@ -141,8 +145,10 @@ static VALUE _create(VALUE self, VALUE options)
 	return self;
 }
 
-static void init_emitter(void)
+/* Init_lwes_ext will call this */
+void init_emitter(void)
 {
+	VALUE mLWES = rb_define_module("LWES");
 	cLWES_Emitter = rb_define_class_under(mLWES, "Emitter", rb_cObject);
 
 	rb_define_method(cLWES_Emitter, "emit", emitter_emit, 1);

@@ -2,9 +2,9 @@
 #include <ruby.h>
 #include <assert.h>
 
-static VALUE mLWES;
+void init_emitter(void); /* emitter.c */
 
-#include "emitter.h"
+static VALUE mLWES;
 
 /* initialize the extension, Ruby automatically picks this up */
 void Init_lwes_ext(void)
