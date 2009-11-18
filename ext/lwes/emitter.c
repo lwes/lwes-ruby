@@ -1,6 +1,7 @@
 #include <lwes.h>
 #include <ruby.h>
 #include <assert.h>
+#include <stdint.h>
 
 static VALUE cLWES_Emitter;
 
@@ -87,7 +88,7 @@ static VALUE _create(VALUE self, VALUE options)
 	LWES_U_INT_32 _port; /* odd, uint16 would be enough here */
 	LWES_BOOLEAN _emit_heartbeat = FALSE;
 	LWES_INT_16 _freq = 0;
-	LWES_U_INT_32 _ttl = 0xffffffff; /* nobody sets a ttl this long, right? */
+	LWES_U_INT_32 _ttl = UINT32_MAX; /* nobody sets a ttl this long, right? */
 
 	if (rle->e)
 		rb_raise(rb_eRuntimeError, "already created lwes_emitter");
@@ -112,8 +113,8 @@ static VALUE _create(VALUE self, VALUE options)
 	heartbeat = rb_hash_aref(options, ID2SYM(rb_intern("heartbeat")));
 	if (TYPE(heartbeat) == T_FIXNUM) {
 		int tmp = NUM2INT(heartbeat);
-		if (tmp > 0x7fff)
-			rb_raise(rb_eArgError, ":heartbeat > 0x7fff seconds");
+		if (tmp > INT16_MAX)
+			rb_raise(rb_eArgError,":heartbeat > INT16_MAX seconds");
 		_emit_heartbeat = TRUE;
 		_freq = (LWES_INT_16)tmp;
 	} else if (NIL_P(heartbeat)) { /* do nothing, use defaults */
@@ -122,15 +123,15 @@ static VALUE _create(VALUE self, VALUE options)
 
 	ttl = rb_hash_aref(options, ID2SYM(rb_intern("ttl")));
 	if (TYPE(ttl) == T_FIXNUM) {
-		unsigned long tmp = NUM2ULONG(ttl);
-		if (tmp >= 0xffffffff)
-			rb_raise(rb_eArgError, ":ttl >= 0xffffffff seconds");
-		_ttl = tmp;
+		unsigned LONG_LONG tmp = NUM2ULL(ttl);
+		if (tmp >= UINT32_MAX)
+			rb_raise(rb_eArgError, ":ttl >= UINT32_MAX seconds");
+		_ttl = (LWES_U_INT_32)tmp;
 	} else if (NIL_P(ttl)) { /* do nothing, no ttl */
 	} else
 		rb_raise(rb_eTypeError, ":ttl must be a Fixnum or nil");
 
-	if (_ttl == 0xffffffff)
+	if (_ttl == UINT32_MAX)
 		rle->e = lwes_emitter_create(
 		         _address, _iface, _port, _emit_heartbeat, _freq);
 	else
