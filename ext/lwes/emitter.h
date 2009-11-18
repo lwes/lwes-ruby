@@ -61,6 +61,19 @@ static VALUE emitter_emit(VALUE self, VALUE event)
 	return event;
 }
 
+/*
+ * Destroys the associated lwes_emitter and the associated socket.  This
+ * method is rarely needed as Ruby garbage collection will take care of
+ * closing for you, but may be useful in odd cases when it is desirable
+ * to release file descriptors ASAP.
+ */
+static VALUE emitter_close(VALUE self)
+{
+	rle_free(_rle(self));
+
+	return Qnil;
+}
+
 /* should only used internally by #initialize */
 static VALUE _create(VALUE self, VALUE options)
 {
@@ -134,5 +147,6 @@ static void init_emitter(void)
 
 	rb_define_method(cLWES_Emitter, "emit", emitter_emit, 1);
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
+	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
 }

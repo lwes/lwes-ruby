@@ -51,4 +51,9 @@ class TestEmitter < Test::Unit::TestCase
     assert_nothing_raised { emitter.emit(Hash.new) }
   end
 
+  def test_close
+    emitter = LWES::Emitter.new(@options)
+    assert_nil emitter.close
+  end
+
 end
