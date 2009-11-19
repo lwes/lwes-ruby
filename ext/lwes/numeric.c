@@ -10,10 +10,12 @@ static ID
 static int set_uint16(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
 {
-	unsigned tmp = NUM2UINT(val);
+	int32_t tmp = NUM2UINT(val);
 
+	if (tmp < 0)
+		rb_raise(rb_eRangeError, ":uint16 negative: %d", tmp);
 	if (tmp > UINT16_MAX)
-		rb_raise(rb_eRangeError, ":uint16 too large: %u", tmp);
+		rb_raise(rb_eRangeError, ":uint16 too large: %d", tmp);
 
 	return lwes_event_set_U_INT_16(event, name, (LWES_U_INT_16)tmp);
 }
@@ -34,10 +36,12 @@ static int set_int16(
 static int set_uint32(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
 {
-	unsigned LONG_LONG tmp = NUM2ULL(val);
+	LONG_LONG tmp = NUM2LL(val);
 
+	if (tmp < 0)
+		rb_raise(rb_eRangeError, ":uint32 negative: %lli", tmp);
 	if (tmp > UINT32_MAX)
-		rb_raise(rb_eRangeError, ":uint32 too large: %llu", tmp);
+		rb_raise(rb_eRangeError, ":uint32 too large: %lli", tmp);
 
 	return lwes_event_set_U_INT_32(event, name, (LWES_U_INT_32)tmp);
 }
@@ -59,6 +63,12 @@ static int set_uint64(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
 {
 	unsigned LONG_LONG tmp = NUM2ULL(val); /* can raise RangeError */
+	ID type = TYPE(val);
+
+	if ((type == T_FIXNUM && FIX2INT(val) < 0) ||
+	    (type == T_BIGNUM && RTEST(rb_funcall(val, '<', 1, INT2FIX(0)))))
+		rb_raise(rb_eRangeError, ":uint64 negative: %s",
+		         RSTRING_PTR(rb_inspect(val)));
 
 	return lwes_event_set_U_INT_32(event, name, (LWES_U_INT_64)tmp);
 }

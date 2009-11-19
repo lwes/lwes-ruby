@@ -161,11 +161,9 @@ class TestEmitter < Test::Unit::TestCase
       assert_raises(RangeError) {
         emitter.emit("over", { type => [ type, max + 1] })
       }
-      if (min != 0)
-        assert_raises(RangeError) {
-          emitter.emit("under", { type => [ type, min - 1 ] })
-        }
-      end
+      assert_raises(RangeError, "type=#{type} min=#{min}") {
+        emitter.emit("under", { type => [ type, min - 1 ] })
+      }
       assert_nothing_raised {
         emitter.emit("zero", { type => [ type, 0 ] })
       }
