@@ -1,5 +1,3 @@
-require 'lwes_ext'
-
 module LWES
   class Emitter
 
