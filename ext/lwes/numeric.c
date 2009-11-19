@@ -5,7 +5,7 @@ static ID
   id_int16, id_uint16,
   id_int32, id_uint32,
   id_int64, id_uint64,
-  id_ipv4;
+  id_ip_addr;
 
 static int set_uint16(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
@@ -71,7 +71,7 @@ static int set_int64(
 	return lwes_event_set_INT_32(event, name, (LWES_INT_64)tmp);
 }
 
-static int set_ipv4(
+static int set_ip_addr(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
 {
 	switch (TYPE(val)) {
@@ -95,7 +95,7 @@ static int set_ipv4(
 	}
 	default:
 		rb_raise(rb_eTypeError,
-		         "ipv4 address must be String or Integer: %s",
+		         ":ip_addr address must be String or Integer: %s",
 		         RSTRING_PTR(rb_inspect(val)));
 	}
 }
@@ -112,7 +112,7 @@ static struct _type_fn_map {
 	IDFN(int32),
 	IDFN(uint64),
 	IDFN(int64),
-	IDFN(ipv4),
+	IDFN(ip_addr),
 #undef IDFN
 };
 
@@ -163,7 +163,7 @@ void init_numeric(void)
 	MKID(uint32);
 	MKID(int64);
 	MKID(uint64);
-	MKID(ipv4);
+	MKID(ip_addr);
 #undef MKID
 
 	/*

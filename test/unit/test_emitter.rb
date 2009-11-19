@@ -101,7 +101,7 @@ class TestEmitter < Test::Unit::TestCase
 
   def test_emit_ip_addr_string
     emitter = LWES::Emitter.new(@options)
-    event = { :string_ip => [ :ipv4, "192.168.1.1" ] }
+    event = { :string_ip => [ :ip_addr, "192.168.1.1" ] }
     out = lwes_listener do
       assert_nothing_raised { emitter.emit("STRING_IP", event) }
     end
@@ -111,7 +111,7 @@ class TestEmitter < Test::Unit::TestCase
 
   def test_emit_ip_addr_int
     emitter = LWES::Emitter.new(@options)
-    event = { :int_ip => [ :ipv4, IPAddr.new("192.168.1.1").to_i ] }
+    event = { :int_ip => [ :ip_addr, IPAddr.new("192.168.1.1").to_i ] }
     out = lwes_listener do
       assert_nothing_raised { emitter.emit("INT_IP", event) }
     end
