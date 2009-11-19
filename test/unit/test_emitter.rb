@@ -77,6 +77,7 @@ class TestEmitter < Test::Unit::TestCase
   def test_emit_invalid
     emitter = LWES::Emitter.new(@options)
     assert_raises(TypeError) { emitter.emit "Invalid", nil }
+    assert_raises(ArgumentError) { emitter.emit nil, { :hello => "world" }}
   end
 
   def test_emit_empty_hash

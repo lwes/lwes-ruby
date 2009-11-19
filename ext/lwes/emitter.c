@@ -50,20 +50,6 @@ static VALUE rle_alloc(VALUE klass)
 	                        rle_mark, rle_free, rle);
 }
 
-/* returns an lwes_event depending on the value of name */
-static struct lwes_event * create_event(VALUE name)
-{
-	switch (TYPE(name)) {
-	case T_NIL:
-		return lwes_event_create_no_name(NULL);
-	case T_STRING:
-		return lwes_event_create(NULL, RSTRING_PTR(name));
-	}
-	rb_raise(rb_eArgError, "event name must be String or nil");
-	assert(0 && "rb_raise broke on us");
-	return NULL;
-}
-
 /*
  * kv - Array:
  *   key => String,
@@ -141,8 +127,8 @@ static VALUE _destroy_event(VALUE _e)
 
 static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 {
-	struct lwes_event *e = create_event(name);
 	VALUE tmp[3];
+	struct lwes_event *e = lwes_event_create(NULL, RSTRING_PTR(name));
 
 	if (!e)
 		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
@@ -156,13 +142,15 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 }
 
 /*
- * XXX Not working yet
  * call-seq:
  *   emitter = LWES::Emitter.new
  *   emitter.emit("EventName", :foo => "HI")
  */
 static VALUE emitter_emit(VALUE self, VALUE name, VALUE event)
 {
+	if (TYPE(name) != T_STRING)
+		rb_raise(rb_eArgError, "event name must be a String");
+
 	switch (TYPE(event)) {
 	case T_HASH:
 		return emit_hash(self, name, event);
