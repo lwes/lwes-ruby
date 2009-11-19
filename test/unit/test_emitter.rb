@@ -153,6 +153,17 @@ class TestEmitter < Test::Unit::TestCase
     check_min_max(:uint16, 0, 0xffff)
     check_min_max(:uint32, 0, 0xffffffff)
     check_min_max(:uint64, 0, 0xffffffffffffffff)
+    huge = 0xffffffffffffffffffffffffffffffff
+    tiny = -0xffffffffffffffffffffffffffffffff
+    [ :int16, :int32, :int64, :uint16, :uint32, :uint64 ].each do |type|
+      emitter = LWES::Emitter.new(@options)
+      assert_raises(RangeError) {
+        emitter.emit("way over", { type => [ type, huge ] })
+      }
+      assert_raises(RangeError) {
+        emitter.emit("way under", { type => [ type, tiny ] })
+      }
+    end
   end
 
   def check_min_max(type, min, max)
