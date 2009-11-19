@@ -86,10 +86,15 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(v));
 		break;
 	}
-	if (rv <= 0)
-		rb_raise(rb_eRuntimeError, "failed to set %s=%s for event=%s",
+	if (rv > 0)
+		return Qnil;
+	if (rv == 0)
+		rb_raise(rb_eArgError, "unhandled type %s=%s for event=%s",
 	                 name, RSTRING_PTR(rb_inspect(v)), event->eventName);
-	return Qnil;
+	/* rv < 0 */
+	rb_raise(rb_eRuntimeError, "failed to set %s=%s for event=%s",
+		 name, RSTRING_PTR(rb_inspect(v)), event->eventName);
+	return Qfalse;
 }
 
 static VALUE _emit_hash(VALUE _tmp)
