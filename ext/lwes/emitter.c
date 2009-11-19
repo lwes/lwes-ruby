@@ -62,8 +62,9 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 {
 	VALUE *tmp;
 	VALUE v;
-	struct lwes_event *e = (struct lwes_event *)memo;
+	struct lwes_event *event = (struct lwes_event *)memo;
 	LWES_CONST_SHORT_STRING name;
+	int rv = 0;
 
 	assert(TYPE(kv) == T_ARRAY &&
 	       "hash iteration not giving key-value pairs");
@@ -73,29 +74,21 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 	v = tmp[1];
 	switch (TYPE(v)) {
 	case T_TRUE:
-		if (lwes_event_set_BOOLEAN(e, name, TRUE) < 0)
-			rb_raise(rb_eRuntimeError,
-			         "failed to set boolean true for event");
+		rv = lwes_event_set_BOOLEAN(event, name, TRUE);
 		break;
 	case T_FALSE:
-		if (lwes_event_set_BOOLEAN(e, name, FALSE) < 0)
-			rb_raise(rb_eRuntimeError,
-			         "failed to set boolean false for event");
+		rv = lwes_event_set_BOOLEAN(event, name, FALSE);
 		break;
 	case T_ARRAY:
-		if (lwesrb_event_set_numeric(e, name, v) < 0)
-			rb_raise(rb_eRuntimeError,
-			         "failed to set numeric for event");
+		rv = lwesrb_event_set_numeric(event, name, v);
 		break;
 	case T_STRING:
-		if (lwes_event_set_STRING(e, name, RSTRING_PTR(v)) < 0)
-			rb_raise(rb_eRuntimeError,
-			         "failed to set string for event");
+		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(v));
 		break;
-	default:
-		rb_p(v);
 	}
-
+	if (rv <= 0)
+		rb_raise(rb_eRuntimeError, "failed to set %s=%s for event=%s",
+	                 name, RSTRING_PTR(rb_inspect(v)), event->eventName);
 	return Qnil;
 }
 
@@ -103,42 +96,42 @@ static VALUE _emit_hash(VALUE _tmp)
 {
 	VALUE *tmp = (VALUE *)_tmp;
 	VALUE self = tmp[0];
-	VALUE event = tmp[1];
-	struct lwes_event *e = (struct lwes_event *)tmp[2];
+	VALUE _event = tmp[1];
+	struct lwes_event *event = (struct lwes_event *)tmp[2];
 	int nr;
 
-	rb_iterate(rb_each, event, event_hash_iter_i, (VALUE)e);
-	if ((nr = lwes_emitter_emit(_rle(self)->e, e)) < 0) {
+	rb_iterate(rb_each, _event, event_hash_iter_i, (VALUE)event);
+	if ((nr = lwes_emitter_emit(_rle(self)->e, event)) < 0) {
 		rb_raise(rb_eRuntimeError, "failed to emit event");
 	}
 
-	return event;
+	return _event;
 }
 
-static VALUE _destroy_event(VALUE _e)
+static VALUE _destroy_event(VALUE _event)
 {
-	struct lwes_event *e = (struct lwes_event *)_e;
+	struct lwes_event *event = (struct lwes_event *)_event;
 
-	assert(e && "destroying NULL event");
-	lwes_event_destroy(e);
+	assert(event && "destroying NULL event");
+	lwes_event_destroy(event);
 
 	return Qnil;
 }
 
-static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
+static VALUE emit_hash(VALUE self, VALUE name, VALUE _event)
 {
 	VALUE tmp[3];
-	struct lwes_event *e = lwes_event_create(NULL, RSTRING_PTR(name));
+	struct lwes_event *event = lwes_event_create(NULL, RSTRING_PTR(name));
 
-	if (!e)
+	if (!event)
 		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
 
 	tmp[0] = self;
-	tmp[1] = event;
-	tmp[2] = (VALUE)e;
-	rb_ensure(_emit_hash, (VALUE)&tmp, _destroy_event, (VALUE)e);
+	tmp[1] = _event;
+	tmp[2] = (VALUE)event;
+	rb_ensure(_emit_hash, (VALUE)&tmp, _destroy_event, (VALUE)event);
 
-	return event;
+	return _event;
 }
 
 /*
