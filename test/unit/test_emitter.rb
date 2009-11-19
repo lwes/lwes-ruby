@@ -98,6 +98,18 @@ class TestEmitter < Test::Unit::TestCase
     assert ! lines.grep(/nr = 50;/).empty?
   end
 
+  def test_emit_booleans
+    emitter = LWES::Emitter.new(@options)
+    event = { :true => true, :false => false }
+    out = lwes_listener do
+      assert_nothing_raised { emitter.emit("BOOLS", event)
+      }
+    end
+    lines = out.readlines
+    assert_equal 1, lines.grep(/true = true;/).size
+    assert_equal 1, lines.grep(/false = false;/).size
+  end
+
   def test_emit_numeric_ranges
     check_min_max(:int16, -0x7fff - 1, 0x7fff)
     check_min_max(:int32, -0x7fffffff - 1, 0x7fffffff)
