@@ -1,5 +1,6 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 require 'tempfile'
+require 'ipaddr'
 
 class TestEmitter < Test::Unit::TestCase
   BEFORE_DELAY = ENV['BEFORE_DELAY'] ? ENV['BEFORE_DELAY'].to_f : 0.5
@@ -96,6 +97,36 @@ class TestEmitter < Test::Unit::TestCase
     assert_match %r{\AASDF\b}, lines.first
     assert ! lines.grep(/foo = FOO;/).empty?
     assert ! lines.grep(/nr = 50;/).empty?
+  end
+
+  def test_emit_ip_addr_string
+    emitter = LWES::Emitter.new(@options)
+    event = { :string_ip => [ :ipv4, "192.168.1.1" ] }
+    out = lwes_listener do
+      assert_nothing_raised { emitter.emit("STRING_IP", event) }
+    end
+    lines = out.readlines
+    assert_equal 1, lines.grep(/string_ip = 192.168.1.1/).size
+  end
+
+  def test_emit_ip_addr_int
+    emitter = LWES::Emitter.new(@options)
+    event = { :int_ip => [ :ipv4, IPAddr.new("192.168.1.1").to_i ] }
+    out = lwes_listener do
+      assert_nothing_raised { emitter.emit("INT_IP", event) }
+    end
+    lines = out.readlines
+    assert_equal 1, lines.grep(/int_ip = 192.168.1.1/).size
+  end
+
+  def TODO_emit_ip_addr_object
+    emitter = LWES::Emitter.new(@options)
+    event = { :ip => IPAddr.new("192.168.1.1") }
+    out = lwes_listener do
+      assert_nothing_raised { emitter.emit("IP", event) }
+    end
+    lines = out.readlines
+    assert_equal 1, lines.grep(/\bip = 192.168.1.1/).size
   end
 
   def test_emit_booleans
