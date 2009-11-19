@@ -97,6 +97,44 @@ class TestEmitter < Test::Unit::TestCase
     assert ! lines.grep(/nr = 50;/).empty?
   end
 
+  def test_emit_numeric_ranges
+    check_min_max(:int16, -0x7fff - 1, 0x7fff)
+    check_min_max(:int32, -0x7fffffff - 1, 0x7fffffff)
+    check_min_max(:int64, -0x7fffffffffffffff - 1, 0x7fffffffffffffff)
+    check_min_max(:uint16, 0, 0xffff)
+    check_min_max(:uint32, 0, 0xffffffff)
+    check_min_max(:uint64, 0, 0xffffffffffffffff)
+  end
+
+  def check_min_max(type, min, max)
+    emitter = LWES::Emitter.new(@options)
+    out = lwes_listener do
+      assert_raises(RangeError) {
+        emitter.emit("over", { type => [ type, max + 1] })
+      }
+      if (min != 0)
+        assert_raises(RangeError) {
+          emitter.emit("under", { type => [ type, min - 1 ] })
+        }
+      end
+      assert_nothing_raised {
+        emitter.emit("zero", { type => [ type, 0 ] })
+      }
+      assert_nothing_raised {
+        emitter.emit("min", { type => [ type, min ] })
+      }
+      assert_nothing_raised {
+        emitter.emit("max", { type => [ type, max ] })
+      }
+    end
+    lines = out.readlines
+    assert lines.grep(/\Aover/).empty?
+    assert lines.grep(/\Aunder/).empty?
+    assert_equal 1, lines.grep(/\Amax/).size
+    assert_equal 1, lines.grep(/\Amin/).size
+    assert_equal 1, lines.grep(/\Azero/).size
+  end
+
   def test_close
     emitter = LWES::Emitter.new(@options)
     assert_nil emitter.close

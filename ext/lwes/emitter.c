@@ -1,14 +1,6 @@
-#include <lwes.h>
-#include <ruby.h>
-#include <assert.h>
-#include <stdint.h>
+#include "lwes_ruby.h"
 
 static VALUE cLWES_Emitter;
-static ID
-  id_int16, id_uint16,
-  id_int32, id_uint32,
-  id_int64, id_uint64,
-  id_to_i;
 
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
@@ -73,47 +65,6 @@ static struct lwes_event * create_event(VALUE name)
 }
 
 /*
- * array contains two elements:
- *   [ symbolic_type, number ]
- * returns the return value of the underlying lwes_event_set_* call
- */
-static int event_set_numeric(
-	struct lwes_event *e,
-	LWES_CONST_SHORT_STRING name,
-	VALUE array)
-{
-	VALUE *a;
-	ID type;
-
-	assert(TYPE(array) == T_ARRAY && "need array here");
-
-	if (RARRAY_LEN(array) != 2)
-		rb_raise(rb_eArgError, "expected a two element array");
-
-	a = RARRAY_PTR(array);
-	type = a[0];
-
-	if (type == id_uint16) {
-		unsigned tmp = NUM2UINT(a[1]);
-
-		if (tmp > UINT16_MAX)
-			rb_raise(rb_eArgError, ":uint16 too large: %u", tmp);
-		return lwes_event_set_U_INT_16(e, name, (LWES_U_INT_16)tmp);
-	} else if (type == id_int16) {
-		int tmp = NUM2INT(a[1]);
-
-		if (tmp > INT16_MAX)
-			rb_raise(rb_eArgError, ":int16 too large: %i", tmp);
-		else if (tmp < INT16_MIN)
-			rb_raise(rb_eArgError, ":int16 too small: %i", tmp);
-		else
-			return lwes_event_set_INT_16(e, name, (LWES_INT_16)tmp);
-	} else {
-		rb_raise(rb_eArgError, "unknown type");
-	}
-}
-
-/*
  * kv - Array:
  *   key => String,
  *   key => [ numeric_type, Numeric ],
@@ -146,7 +97,7 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 			         "failed to set boolean false for event");
 		break;
 	case T_ARRAY:
-		if (event_set_numeric(e, name, v) < 0)
+		if (lwesrb_event_set_numeric(e, name, v) < 0)
 			rb_raise(rb_eRuntimeError,
 			         "failed to set numeric for event");
 		break;
@@ -314,13 +265,5 @@ void init_emitter(void)
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
 
-#define MKID(T) id_##T = ID2SYM(rb_intern(#T))
-	MKID(int16);
-	MKID(uint16);
-	MKID(int32);
-	MKID(uint32);
-	MKID(int64);
-	MKID(uint64);
-	MKID(to_i);
-#undef MKID
+	init_numeric();
 }
