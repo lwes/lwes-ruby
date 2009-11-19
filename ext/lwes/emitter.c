@@ -4,7 +4,7 @@ static VALUE cLWES_Emitter;
 
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
-	struct lwes_emitter *e;
+	struct lwes_emitter *emitter;
 
 	/*
 	 * map certain fields to certain types so we won't have to worry about
@@ -36,9 +36,9 @@ static void rle_free(void *ptr)
 {
 	struct _rb_lwes_emitter *rle = ptr;
 
-	if (rle->e)
-		lwes_emitter_destroy(rle->e);
-	rle->e = NULL;
+	if (rle->emitter)
+		lwes_emitter_destroy(rle->emitter);
+	rle->emitter = NULL;
 }
 
 /* called by the GC when object is allocated */
@@ -101,7 +101,7 @@ static VALUE _emit_hash(VALUE _tmp)
 	int nr;
 
 	rb_iterate(rb_each, _event, event_hash_iter_i, (VALUE)event);
-	if ((nr = lwes_emitter_emit(_rle(self)->e, event)) < 0) {
+	if ((nr = lwes_emitter_emit(_rle(self)->emitter, event)) < 0) {
 		rb_raise(rb_eRuntimeError, "failed to emit event");
 	}
 
@@ -179,7 +179,7 @@ static VALUE _create(VALUE self, VALUE options)
 	LWES_INT_16 _freq = 0;
 	LWES_U_INT_32 _ttl = UINT32_MAX; /* nobody sets a ttl this long, right? */
 
-	if (rle->e)
+	if (rle->emitter)
 		rb_raise(rb_eRuntimeError, "already created lwes_emitter");
 	if (TYPE(options) != T_HASH)
 		rb_raise(rb_eTypeError, "options must be a hash");
@@ -221,13 +221,13 @@ static VALUE _create(VALUE self, VALUE options)
 		rb_raise(rb_eTypeError, ":ttl must be a Fixnum or nil");
 
 	if (_ttl == UINT32_MAX)
-		rle->e = lwes_emitter_create(
+		rle->emitter = lwes_emitter_create(
 		         _address, _iface, _port, _emit_heartbeat, _freq);
 	else
-		rle->e = lwes_emitter_create_with_ttl(
+		rle->emitter = lwes_emitter_create_with_ttl(
 		         _address, _iface, _port, _emit_heartbeat, _freq, _ttl);
 
-	if (!rle->e)
+	if (!rle->emitter)
 		rb_raise(rb_eRuntimeError, "failed to create LWES emitter");
 
 	rle->field_types = rb_hash_new();
