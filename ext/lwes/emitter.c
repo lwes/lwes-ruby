@@ -103,12 +103,10 @@ static VALUE _emit_hash(VALUE _tmp)
 	VALUE self = tmp[0];
 	VALUE _event = tmp[1];
 	struct lwes_event *event = (struct lwes_event *)tmp[2];
-	int nr;
 
 	rb_iterate(rb_each, _event, event_hash_iter_i, (VALUE)event);
-	if ((nr = lwes_emitter_emit(_rle(self)->emitter, event)) < 0) {
+	if (lwes_emitter_emit(_rle(self)->emitter, event) < 0)
 		rb_raise(rb_eRuntimeError, "failed to emit event");
-	}
 
 	return _event;
 }
