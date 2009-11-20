@@ -61,16 +61,17 @@ static VALUE attr_sym(struct lwes_event_attribute *attr)
 	return Qfalse;
 }
 
-static VALUE event_def_hash(struct lwes_hash *hash)
+static VALUE event_def_ary(struct lwes_hash *hash)
 {
 	struct lwes_hash_enumeration e;
-	VALUE rv = rb_hash_new();
+	VALUE rv = rb_ary_new();
 
 	if (!lwes_hash_keys(hash, &e))
 		rb_raise(rb_eRuntimeError, "couldn't get event attributes");
 	while (lwes_hash_enumeration_has_more_elements(&e)) {
 		LWES_SHORT_STRING key = lwes_hash_enumeration_next_element(&e);
 		struct lwes_event_attribute *attr;
+		VALUE pair;
 
 		if (!key)
 			rb_raise(rb_eRuntimeError,
@@ -81,7 +82,8 @@ static VALUE event_def_hash(struct lwes_hash *hash)
 			rb_raise(rb_eRuntimeError,
 			         "LWES event type iteration value fail");
 
-		rb_hash_aset(rv, ID2SYM(rb_intern(key)), attr_sym(attr));
+		pair = rb_ary_new3(2, ID2SYM(rb_intern(key)), attr_sym(attr));
+		rb_ary_push(rv, pair);
 	}
 
 	return rv;
@@ -116,7 +118,7 @@ static VALUE tdb_to_hash(VALUE self)
 			         "LWES type DB rv iteration value fail");
 
 		event_key = ID2SYM(rb_intern(key));
-		rb_hash_aset(rv, event_key, event_def_hash(hash));
+		rb_hash_aset(rv, event_key, event_def_ary(hash));
 	}
 
 	return rv;
