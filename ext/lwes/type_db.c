@@ -114,7 +114,7 @@ static VALUE tdb_to_hash(VALUE self)
 			rb_raise(rb_eRuntimeError,
 			         "LWES type DB rv iteration key fail");
 
-		hash = (struct lwes_event *)lwes_hash_get(events, key);
+		hash = (struct lwes_hash*)lwes_hash_get(events, key);
 		if (!hash)
 			rb_raise(rb_eRuntimeError,
 			         "LWES type DB rv iteration value fail");
