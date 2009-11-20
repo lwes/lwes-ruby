@@ -2,13 +2,6 @@
 
 static VALUE cLWES_TypeDB;
 
-static ID
-  sym_int16, sym_uint16,
-  sym_int32, sym_uint32,
-  sym_int64, sym_uint64,
-  sym_ip_addr, sym_string,
-  sym_boolean;
-
 struct _tdb {
 	struct lwes_event_type_db *db;
 };
@@ -46,22 +39,25 @@ static VALUE tdb_init(VALUE self, VALUE path)
 	return Qnil;
 }
 
-static ID attr_sym(struct lwes_event_attribute *attr)
+static VALUE attr_sym(struct lwes_event_attribute *attr)
 {
 	switch (attr->type) {
-	case LWES_TYPE_U_INT_16: return sym_uint16;
-	case LWES_TYPE_INT_16: return sym_int16;
-	case LWES_TYPE_U_INT_32: return sym_uint32;
-	case LWES_TYPE_INT_32: return sym_int32;
-	case LWES_TYPE_U_INT_64: return sym_uint64;
-	case LWES_TYPE_INT_64: return sym_int64;
-	case LWES_TYPE_BOOLEAN: return sym_boolean;
-	case LWES_TYPE_IP_ADDR: return sym_ip_addr;
-	case LWES_TYPE_STRING: return sym_string;
+	case LWES_TYPE_U_INT_16:
+	case LWES_TYPE_INT_16:
+	case LWES_TYPE_U_INT_32:
+	case LWES_TYPE_INT_32:
+	case LWES_TYPE_U_INT_64:
+	case LWES_TYPE_INT_64:
+	case LWES_TYPE_BOOLEAN:
+	case LWES_TYPE_IP_ADDR:
+	case LWES_TYPE_STRING:
+		return INT2NUM(attr->type);
+	case LWES_TYPE_UNDEFINED:
+	default:
+		rb_raise(rb_eRuntimeError,
+			 "unknown LWES attribute type: 0x%02x", attr->type);
 	}
 
-	rb_raise(rb_eRuntimeError,
-	         "unknown LWES attribute type: 0x%02x", attr->type);
 	return Qfalse;
 }
 
@@ -133,15 +129,4 @@ void init_type_db(void)
 	rb_define_method(cLWES_TypeDB, "initialize", tdb_init, 1);
 	rb_define_method(cLWES_TypeDB, "to_hash", tdb_to_hash, 0);
 	rb_define_alloc_func(cLWES_TypeDB, tdb_alloc);
-#define MKSYM(T) sym_##T = ID2SYM(rb_intern(#T))
-	MKSYM(int16);
-	MKSYM(uint16);
-	MKSYM(int32);
-	MKSYM(uint32);
-	MKSYM(int64);
-	MKSYM(uint64);
-	MKSYM(ip_addr);
-	MKSYM(string);
-	MKSYM(boolean);
-#undef MKSYM
 }
