@@ -68,7 +68,7 @@ class TestStruct < Test::Unit::TestCase
 
       class << self
         def get_type_db
-          TYPE_DB
+          const_get(:TYPE_DB)
         end
       end
     end
@@ -76,6 +76,7 @@ class TestStruct < Test::Unit::TestCase
     assert y.respond_to?(:aaaaaaaa)
     assert_instance_of TrueClass, y.aaaaaaaa
     assert_equal a.const_get(:TYPE_DB).object_id, a.get_type_db.object_id
+    assert_equal EXPECT_DB, a.get_type_db
   end
 
 end
