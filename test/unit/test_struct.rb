@@ -60,4 +60,22 @@ class TestStruct < Test::Unit::TestCase
     assert_kind_of(::Struct, y)
   end
 
+  def test_eval
+    a = LWES::Struct.new(ESF_FILE, :Eval, :event_class => :Event1) do
+      def aaaaaaaa
+        true
+      end
+
+      class << self
+        def get_type_db
+          TYPE_DB
+        end
+      end
+    end
+    y = a.new
+    assert y.respond_to?(:aaaaaaaa)
+    assert_instance_of TrueClass, y.aaaaaaaa
+    assert_equal a.const_get(:TYPE_DB).object_id, a.get_type_db.object_id
+  end
+
 end

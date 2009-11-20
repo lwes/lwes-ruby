@@ -5,7 +5,7 @@ module LWES
     # with the given +klass_sym+ as the name.  Options may
     # include :event_class (in case it differs in the ESF file)
     # and the :parent_class (Object).
-    def self.new(file, klass_sym, options = {})
+    def self.new(file, klass_sym, options = {}, &block)
       dump = TypeDB.new(file).to_hash
       event_class = options[:event_class] || klass_sym
       parent_class = options[:parent_class] || Object
@@ -15,6 +15,9 @@ module LWES
       klass = ::Struct.new(*(event_def.keys))
       klass.const_set :TYPE_DB, event_def.freeze
       klass = parent_class.const_set(klass_sym, klass)
+
+      klass.class_eval(&block) if block_given?
+      klass
     end
   end
 end
