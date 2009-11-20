@@ -2,6 +2,13 @@
 
 static VALUE cLWES_TypeDB;
 
+static ID
+  sym_int16, sym_uint16,
+  sym_int32, sym_uint32,
+  sym_int64, sym_uint64,
+  sym_ip_addr, sym_string,
+  sym_boolean;
+
 struct _tdb {
 	struct lwes_event_type_db *db;
 };
@@ -39,10 +46,102 @@ static VALUE tdb_init(VALUE self, VALUE path)
 	return Qnil;
 }
 
+static ID attr_sym(struct lwes_event_attribute *attr)
+{
+	switch (attr->type) {
+	case LWES_TYPE_U_INT_16: return sym_uint16;
+	case LWES_TYPE_INT_16: return sym_int16;
+	case LWES_TYPE_U_INT_32: return sym_uint32;
+	case LWES_TYPE_INT_32: return sym_int32;
+	case LWES_TYPE_U_INT_64: return sym_uint64;
+	case LWES_TYPE_INT_64: return sym_int64;
+	case LWES_TYPE_BOOLEAN: return sym_boolean;
+	case LWES_TYPE_IP_ADDR: return sym_ip_addr;
+	case LWES_TYPE_STRING: return sym_string;
+	}
+
+	rb_raise(rb_eRuntimeError,
+	         "unknown LWES attribute type: 0x%02x", attr->type);
+	return Qfalse;
+}
+
+static VALUE event_def_hash(struct lwes_hash *hash)
+{
+	struct lwes_hash_enumeration e;
+	VALUE rv = rb_hash_new();
+
+	if (!lwes_hash_keys(hash, &e))
+		rb_raise(rb_eRuntimeError, "couldn't get event attributes");
+	while (lwes_hash_enumeration_has_more_elements(&e)) {
+		LWES_SHORT_STRING key = lwes_hash_enumeration_next_element(&e);
+		struct lwes_event_attribute *attr;
+
+		if (!key)
+			rb_raise(rb_eRuntimeError,
+			         "LWES event type iteration key fail");
+
+		attr = (struct lwes_event_attribute *)lwes_hash_get(hash, key);
+		if (!attr)
+			rb_raise(rb_eRuntimeError,
+			         "LWES event type iteration value fail");
+
+		rb_hash_aset(rv, ID2SYM(rb_intern(key)), attr_sym(attr));
+	}
+
+	return rv;
+}
+
+static VALUE tdb_to_hash(VALUE self)
+{
+	struct _tdb *tdb;
+	VALUE rv = rb_hash_new();
+	struct lwes_hash *events;
+	struct lwes_hash_enumeration e;
+
+	Data_Get_Struct(self, struct _tdb, tdb);
+	assert(tdb->db && tdb->db->events && "tdb not initialized");
+	events = tdb->db->events;
+
+	if (!lwes_hash_keys(events, &e))
+		rb_raise(rb_eRuntimeError, "couldn't get type_db events");
+
+	while (lwes_hash_enumeration_has_more_elements(&e)) {
+		struct lwes_hash *hash;
+		ID event_key;
+		LWES_SHORT_STRING key = lwes_hash_enumeration_next_element(&e);
+
+		if (!key)
+			rb_raise(rb_eRuntimeError,
+			         "LWES type DB rv iteration key fail");
+
+		hash = (struct lwes_event *)lwes_hash_get(events, key);
+		if (!hash)
+			rb_raise(rb_eRuntimeError,
+			         "LWES type DB rv iteration value fail");
+
+		event_key = ID2SYM(rb_intern(key));
+		rb_hash_aset(rv, event_key, event_def_hash(hash));
+	}
+
+	return rv;
+}
+
 void init_type_db(void)
 {
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_TypeDB = rb_define_class_under(mLWES, "TypeDB", rb_cObject);
 	rb_define_method(cLWES_TypeDB, "initialize", tdb_init, 1);
+	rb_define_method(cLWES_TypeDB, "to_hash", tdb_to_hash, 0);
 	rb_define_alloc_func(cLWES_TypeDB, tdb_alloc);
+#define MKSYM(T) sym_##T = ID2SYM(rb_intern(#T))
+	MKSYM(int16);
+	MKSYM(uint16);
+	MKSYM(int32);
+	MKSYM(uint32);
+	MKSYM(int64);
+	MKSYM(uint64);
+	MKSYM(ip_addr);
+	MKSYM(string);
+	MKSYM(boolean);
+#undef MKSYM
 }
