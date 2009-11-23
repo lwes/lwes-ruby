@@ -94,42 +94,29 @@ module LWES
       end
       defaults = options[:defaults] || {}
       defaults = tmp.const_set :DEFAULTS, defaults.dup
-
-      # define a parent-level method, so instead of Event.new
-      # you could do
-      if false
-        (parent == Object ?
-          Kernel : parent.instance_eval { class << self; self; end }
-        ).__send__(:define_method, klass) do |*args|
-          if Hash === (init = args.first)
-            rv = tmp.new()
-            defaults.merge(init).each_pair { |k,v| rv[k] = v }
-            rv
-          else
-            rv = tmp.new(*args)
-            defaults.each_pair { |k,v| rv[k] ||= v }
-            rv
-          end
-        end
-      else
-        tmp.instance_eval { class << self; self; end }.instance_eval do
-          alias_method :_new, :new
-          define_method(:new) do |*args|
-            if Hash === (init = args.first)
-              rv = tmp._new()
-              defaults.merge(init).each_pair { |k,v| rv[k] = v }
-              rv
-            else
-              rv = tmp._new(*args)
-              defaults.each_pair { |k,v| rv[k] ||= v }
-              rv
-            end
-          end
-        end
-      end
-
       tmp.class_eval(&block) if block_given?
-      tmp
+
+      # define a parent-level method, eval is faster than define_method
+      eval <<EOS
+class ::#{tmp.name}
+  class << self
+    alias _new new
+    undef_method :new
+    def new(*args)
+      if Hash === (init = args.first)
+        rv = _new()
+        DEFAULTS.merge(init).each_pair { |k,v| rv[k] = v }
+        rv
+      else
+        rv = _new(*args)
+        DEFAULTS.each_pair { |k,v| rv[k] ||= v }
+        rv
+      end
+    end
+  end
+end
+EOS
+    tmp
     end
   end
 end
