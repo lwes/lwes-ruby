@@ -53,8 +53,9 @@ class TestStruct < Test::Unit::TestCase
     a = LWES::Struct.new(:file=>ESF_FILE)
     assert a.instance_of?(Class)
     assert_equal "Event1", a.name
-    assert a.const_get(:TYPE_DB).instance_of?(Hash)
-    assert_equal EXPECT_DB, a.const_get(:TYPE_DB)
+    assert a.const_get(:TYPE_DB).instance_of?(LWES::TypeDB)
+    assert a.const_get(:EVENT_DEF).instance_of?(Hash)
+    assert_equal EXPECT_DB, a.const_get(:EVENT_DEF)
     assert_equal EXPECT_LIST, a.const_get(:TYPE_LIST)
     y = a.new
     assert_equal "Event1", y.class.name
@@ -65,8 +66,8 @@ class TestStruct < Test::Unit::TestCase
     a = LWES::Struct.new(:file=>ESF_FILE,:class=>:Event,:name=>:Event1)
     assert a.instance_of?(Class)
     assert_equal "Event", a.name
-    assert a.const_get(:TYPE_DB).instance_of?(Hash)
-    assert_equal EXPECT_DB, a.const_get(:TYPE_DB)
+    assert a.const_get(:EVENT_DEF).instance_of?(Hash)
+    assert_equal EXPECT_DB, a.const_get(:EVENT_DEF)
     y = a.new
     assert_equal "Event", y.class.name
     assert_kind_of(::Struct, y)
@@ -76,8 +77,8 @@ class TestStruct < Test::Unit::TestCase
     a = LWES::Struct.new(:file=>ESF_FILE,:class=>:Event1,:parent=>LWES)
     assert a.instance_of?(Class)
     assert_equal "LWES::Event1", a.name
-    assert a.const_get(:TYPE_DB).instance_of?(Hash)
-    assert_equal EXPECT_DB, a.const_get(:TYPE_DB)
+    assert a.const_get(:EVENT_DEF).instance_of?(Hash)
+    assert_equal EXPECT_DB, a.const_get(:EVENT_DEF)
     y = a.new
     assert_equal "LWES::Event1", y.class.name
     assert_kind_of(::Struct, y)
@@ -90,16 +91,16 @@ class TestStruct < Test::Unit::TestCase
       end
 
       class << self
-        def get_type_db
-          const_get(:TYPE_DB)
+        def get_event_def
+          const_get(:EVENT_DEF)
         end
       end
     end
     y = a.new
     assert y.respond_to?(:aaaaaaaa)
     assert_instance_of TrueClass, y.aaaaaaaa
-    assert_equal a.const_get(:TYPE_DB).object_id, a.get_type_db.object_id
-    assert_equal EXPECT_DB, a.get_type_db
+    assert_equal a.const_get(:EVENT_DEF).object_id, a.get_event_def.object_id
+    assert_equal EXPECT_DB, a.get_event_def
   end
 
   def test_optional

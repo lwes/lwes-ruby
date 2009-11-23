@@ -29,7 +29,8 @@ module LWES
     def self.new(options, &block)
       file = options[:file] or raise ArgumentError, "esf file missing"
       test ?r, file or raise ArgumentError, "file #{file.inspect} not readable"
-      dump = TypeDB.new(file).to_hash
+      db = TypeDB.new(file)
+      dump = db.to_hash
       klass = options[:class] || begin
         # make it easier to deal with single event files
         events = (dump.keys -  [ :MetaEventInfo ])
@@ -74,8 +75,9 @@ module LWES
 
       tmp = ::Struct.new(*(event_def.map { |(field,_)| field }))
       tmp = parent.const_set(klass, tmp)
-      type_db = tmp.const_set :TYPE_DB, {}
-      event_def.each { |(field,type)| type_db[field] = type }
+      tmp.const_set :TYPE_DB, db
+      ed = tmp.const_set :EVENT_DEF, {}
+      event_def.each { |(field,type)| ed[field] = type }
       tmp.const_set :TYPE_LIST, event_def
 
       optional = tmp.const_set :OPTIONAL, {}
