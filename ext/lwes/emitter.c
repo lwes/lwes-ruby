@@ -338,7 +338,7 @@ static VALUE _create(VALUE self, VALUE options)
 }
 
 /* Init_lwes_ext will call this */
-void init_emitter(void)
+void lwesrb_init_emitter(void)
 {
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_Emitter = rb_define_class_under(mLWES, "Emitter", rb_cObject);
@@ -350,6 +350,4 @@ void init_emitter(void)
 	LWESRB_MKSYM(TYPE_DB);
 	LWESRB_MKSYM(TYPE_LIST);
 	LWESRB_MKSYM(OPTIONAL);
-
-	init_numeric();
 }

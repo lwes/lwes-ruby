@@ -137,7 +137,7 @@ static VALUE tdb_to_hash(VALUE self)
 	return rv;
 }
 
-void init_type_db(void)
+void lwesrb_init_type_db(void)
 {
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_TypeDB = rb_define_class_under(mLWES, "TypeDB", rb_cObject);

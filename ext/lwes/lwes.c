@@ -1,9 +1,4 @@
-#include <lwes.h>
-#include <ruby.h>
-#include <assert.h>
-
-void init_emitter(void); /* emitter.c */
-void init_type_db(void); /* type_db.c */
+#include "lwes_ruby.h"
 
 static VALUE mLWES;
 
@@ -26,6 +21,7 @@ void Init_lwes_ext(void)
 	LWES_TYPE_CONST(UNDEFINED);
 	#undef LWES_TYPE_CONST
 
-	init_emitter();
-	init_type_db();
+	lwesrb_init_numeric();
+	lwesrb_init_emitter();
+	lwesrb_init_type_db();
 }

@@ -1,11 +1,11 @@
-#include "numeric.h"
+#include "lwes_ruby.h"
 #include <arpa/inet.h>
 
 static ID
-  id_int16, id_uint16,
-  id_int32, id_uint32,
-  id_int64, id_uint64,
-  id_ip_addr;
+  sym_int16, sym_uint16,
+  sym_int32, sym_uint32,
+  sym_int64, sym_uint64,
+  sym_ip_addr;
 
 static int set_uint16(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
@@ -115,15 +115,15 @@ static struct _type_fn_map {
 	ID type;
 	int (*fn)(struct lwes_event *, LWES_CONST_SHORT_STRING, VALUE);
 } type_fn_map[] = {
-#define IDFN(T) { (ID)&id_##T, set_##T }
-	IDFN(uint16),
-	IDFN(int16),
-	IDFN(uint32),
-	IDFN(int32),
-	IDFN(uint64),
-	IDFN(int64),
-	IDFN(ip_addr),
-#undef IDFN
+#define SYMFN(T) { (ID)&sym_##T, set_##T }
+	SYMFN(uint16),
+	SYMFN(int16),
+	SYMFN(uint32),
+	SYMFN(int32),
+	SYMFN(uint64),
+	SYMFN(int64),
+	SYMFN(ip_addr),
+#undef SYMFN
 };
 
 int lwesrb_event_set_num(
@@ -184,19 +184,17 @@ int lwesrb_event_set_numeric(
 	return -1;
 }
 
-void init_numeric(void)
+void lwesrb_init_numeric(void)
 {
 	int i;
 
-#define MKID(T) id_##T = ID2SYM(rb_intern(#T))
-	MKID(int16);
-	MKID(uint16);
-	MKID(int32);
-	MKID(uint32);
-	MKID(int64);
-	MKID(uint64);
-	MKID(ip_addr);
-#undef MKID
+	LWESRB_MKSYM(int16);
+	LWESRB_MKSYM(uint16);
+	LWESRB_MKSYM(int32);
+	LWESRB_MKSYM(uint32);
+	LWESRB_MKSYM(int64);
+	LWESRB_MKSYM(uint64);
+	LWESRB_MKSYM(ip_addr);
 
 	/*
 	 * we needed to have constants for compilation, so we set the
