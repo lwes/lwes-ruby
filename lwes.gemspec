@@ -15,20 +15,25 @@ data so that any platform or language can translate it to it's local dialect.
 }.strip
   s.files = %w(
 COPYING
+ChangeLog
 README
 Rakefile
+examples/demo.rb
+examples/my_events.esf
 ext/lwes/emitter.c
 ext/lwes/extconf.rb
 ext/lwes/lwes.c
 ext/lwes/lwes_ruby.h
-ext/lwes/memrchr.c
 ext/lwes/numeric.c
 ext/lwes/type_db.c
 lib/lwes.rb
 lib/lwes/emitter.rb
 lib/lwes/struct.rb
+lib/lwes/type_db.rb
+lwes.gemspec
 test/test_helper.rb
 test/unit/test1.esf
+test/unit/test2.esf
 test/unit/test_emit_struct.rb
 test/unit/test_emitter.rb
 test/unit/test_struct.rb
