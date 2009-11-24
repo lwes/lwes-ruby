@@ -4,7 +4,10 @@ module LWES
     # creates a new Struct-based class, takes the following
     # options hash:
     #
-    #   :file     - pathname to the ESF file, this is always required
+    #   :db       - pre-created LWES::TypeDB object
+    #               this is required unless :file is given
+    #   :file     - pathname to the ESF file,
+    #               this is required unless :db is given
     #   :class    - Ruby base class name, if the ESF file only has one
     #               event defined (besides MetaEventInfo), then specifying
     #               it is optional, otherwise it is required when multiple
@@ -23,9 +26,14 @@ module LWES
     #               creation time
     #
     def self.new(options, &block)
-      file = options[:file] or raise ArgumentError, "esf file missing"
-      test ?r, file or raise ArgumentError, "file #{file.inspect} not readable"
-      db = TypeDB.new(file)
+      db = options[:db]
+      db ||= begin
+        file = options[:file] or
+          raise ArgumentError, "TypeDB :db or ESF :file missing"
+        test ?r, file or
+          raise ArgumentError, "file #{file.inspect} not readable"
+        TypeDB.new(file)
+      end
       dump = db.to_hash
       klass = options[:class] || begin
         # make it easier to deal with single event files

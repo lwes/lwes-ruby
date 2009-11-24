@@ -50,6 +50,21 @@ class TestStruct < Test::Unit::TestCase
   end
 
   def test_new_with_defaults
+    type_db = LWES::TypeDB.new(ESF_FILE)
+    assert type_db.instance_of?(LWES::TypeDB)
+    a = LWES::Struct.new(:db=>type_db, :class => :TypeDB_Event)
+    assert a.instance_of?(Class)
+    assert_equal "TypeDB_Event", a.name
+    assert a.const_get(:TYPE_DB).instance_of?(LWES::TypeDB)
+    assert a.const_get(:EVENT_DEF).instance_of?(Hash)
+    assert_equal EXPECT_DB, a.const_get(:EVENT_DEF)
+    assert_equal EXPECT_LIST, a.const_get(:TYPE_LIST)
+    y = a.new
+    assert_equal "TypeDB_Event", y.class.name
+    assert_kind_of(::Struct, y)
+  end
+
+  def test_new_with_defaults
     a = LWES::Struct.new(:file=>ESF_FILE)
     assert a.instance_of?(Class)
     assert_equal "Event1", a.name
