@@ -89,6 +89,19 @@ static VALUE event_def_ary(struct lwes_hash *hash)
 	return rv;
 }
 
+struct lwes_event_type_db * lwesrb_get_type_db(VALUE self)
+{
+	struct _tdb *tdb;
+
+	Data_Get_Struct(self, struct _tdb, tdb);
+	if (!tdb->db)
+		rb_raise(rb_eRuntimeError,
+		         "couldn't get lwes_type_db from %s",
+		         RSTRING_PTR(rb_inspect(self)));
+
+	return tdb->db;
+}
+
 static VALUE tdb_to_hash(VALUE self)
 {
 	struct _tdb *tdb;

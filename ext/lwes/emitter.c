@@ -1,6 +1,7 @@
 #include "lwes_ruby.h"
 
 static VALUE cLWES_Emitter;
+static ID sym_TYPE_DB, sym_TYPE_LIST, sym_OPTIONAL;
 
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
@@ -111,6 +112,79 @@ static VALUE _emit_hash(VALUE _tmp)
 	return _event;
 }
 
+static int set_field(
+	struct lwes_event *event,
+	LWES_CONST_SHORT_STRING name,
+	LWES_TYPE type,
+	VALUE val)
+{
+	switch (type) {
+	case LWES_TYPE_BOOLEAN:
+		if (val == Qfalse)
+			return lwes_event_set_BOOLEAN(event, name, FALSE);
+		else if (val == Qtrue)
+			return lwes_event_set_BOOLEAN(event, name, TRUE);
+		else
+			rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
+			         name, RSTRING_PTR(rb_inspect(val)));
+	case LWES_TYPE_STRING:
+		if (TYPE(val) != T_STRING)
+			rb_raise(rb_eTypeError, "non-String set for %s: %s",
+			         name, RSTRING_PTR(rb_inspect(val)));
+		return lwes_event_set_STRING(event, name, RSTRING_PTR(val));
+	default:
+		return lwesrb_event_set_num(event, name, type, val);
+	}
+	assert("you should never get here (set_field)");
+	return -1;
+}
+
+static VALUE _emit_struct(VALUE _argv)
+{
+	VALUE *argv = (VALUE *)_argv;
+	VALUE self = argv[0];
+	VALUE _event = argv[1];
+	struct lwes_event *event = (struct lwes_event *)argv[2];
+	VALUE type_list = rb_const_get(CLASS_OF(_event), SYM2ID(sym_TYPE_LIST));
+	VALUE optional = rb_const_get(CLASS_OF(_event), SYM2ID(sym_OPTIONAL));
+	long i = RARRAY_LEN(type_list);
+	VALUE *tmp;
+
+	for (tmp = RARRAY_PTR(type_list); --i >= 0; tmp++) {
+		/* inner: [ :field_sym, "field_name", type ] */
+		VALUE *inner = RARRAY_PTR(*tmp);
+		VALUE val = rb_struct_aref(_event, inner[0]);
+		int rv;
+		LWES_CONST_SHORT_STRING name;
+		LWES_TYPE type;
+
+		if (NIL_P(val)) {
+			if (rb_hash_aref(optional, inner[0]) == Qtrue)
+				continue;
+			rb_raise(rb_eArgError,
+			         "required member %s not set in %s",
+			         RSTRING_PTR(inner[1]),
+			         RSTRING_PTR(rb_inspect(_event)));
+		}
+
+		name = RSTRING_PTR(inner[1]);
+		type = NUM2INT(inner[2]);
+		rv = set_field(event, name, type, val);
+		if (rv > 0)
+			continue;
+
+		rb_raise(rb_eRuntimeError,
+		         "failed to set %s=%s for event=%s (error: %d)",
+		         name, RSTRING_PTR(rb_inspect(val)),
+			 event->eventName, rv);
+	}
+
+	if (lwes_emitter_emit(_rle(self)->emitter, event) < 0)
+		rb_raise(rb_eRuntimeError, "failed to emit event");
+
+	return _event;
+}
+
 static VALUE _destroy_event(VALUE _event)
 {
 	struct lwes_event *event = (struct lwes_event *)_event;
@@ -137,6 +211,30 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE _event)
 	return _event;
 }
 
+static struct lwes_event_type_db * get_type_db(VALUE event)
+{
+	VALUE type_db = rb_const_get(CLASS_OF(event), SYM2ID(sym_TYPE_DB));
+
+	return lwesrb_get_type_db(type_db);
+}
+
+static VALUE emit_struct(VALUE self, VALUE name, VALUE _event)
+{
+	VALUE argv[3];
+	struct lwes_event_type_db *db = get_type_db(_event);
+	struct lwes_event *event = lwes_event_create(db, RSTRING_PTR(name));
+
+	if (!event)
+		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
+
+	argv[0] = self;
+	argv[1] = _event;
+	argv[2] = (VALUE)event;
+	rb_ensure(_emit_struct, (VALUE)&argv, _destroy_event, (VALUE)event);
+
+	return _event;
+}
+
 /*
  * call-seq:
  *   emitter = LWES::Emitter.new
@@ -150,7 +248,8 @@ static VALUE emitter_emit(VALUE self, VALUE name, VALUE event)
 	switch (TYPE(event)) {
 	case T_HASH:
 		return emit_hash(self, name, event);
-	/* TODO T_STRUCT + esf support */
+	case T_STRUCT:
+		return emit_struct(self, name, event);
 	default:
 		rb_raise(rb_eTypeError, "must be a Hash"); /* or Struct */
 	}
@@ -248,6 +347,9 @@ void init_emitter(void)
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
+	LWESRB_MKSYM(TYPE_DB);
+	LWESRB_MKSYM(TYPE_LIST);
+	LWESRB_MKSYM(OPTIONAL);
 
 	init_numeric();
 }

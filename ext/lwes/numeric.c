@@ -126,6 +126,28 @@ static struct _type_fn_map {
 #undef IDFN
 };
 
+int lwesrb_event_set_num(
+	struct lwes_event *event,
+	LWES_CONST_SHORT_STRING name,
+	LWES_TYPE type,
+	VALUE val)
+{
+	switch (type) {
+	case LWES_TYPE_U_INT_16: return set_uint16(event, name, val);
+	case LWES_TYPE_INT_16: return set_int16(event, name, val);
+	case LWES_TYPE_U_INT_32: return set_uint32(event, name, val);
+	case LWES_TYPE_INT_32: return set_int32(event, name, val);
+	case LWES_TYPE_U_INT_64: return set_uint64(event, name, val);
+	case LWES_TYPE_INT_64: return set_int64(event, name, val);
+	case LWES_TYPE_IP_ADDR: return set_ip_addr(event, name, val);
+	default:
+		rb_raise(rb_eRuntimeError,
+			 "unknown LWES attribute type: 0x%02x", type);
+	}
+	assert("you should never get here (set_field)");
+	return -1;
+}
+
 /*
  * array contains two elements:
  *   [ symbolic_type, number ]
