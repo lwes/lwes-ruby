@@ -2,6 +2,13 @@
 
 static VALUE cLWES_Emitter;
 static ID sym_TYPE_DB, sym_TYPE_LIST, sym_OPTIONAL;
+static ID id_new;
+
+#ifndef HAVE_MEMRCHR
+# define memrchr(s,c,n) lwesrb_memrchr(s,c,n)
+#else
+extern void * memrchr(void const *s, int c, size_t n);
+#endif /* HAVE_MEMRCHR */
 
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
@@ -145,6 +152,9 @@ static VALUE _emit_struct(VALUE _argv)
 		LWES_TYPE type;
 
 		if (NIL_P(val)) {
+			continue;
+
+			/* XXX check if we should care for optional fields */
 			if (rb_hash_aref(optional, inner[0]) == Qtrue)
 				continue;
 			rb_raise(rb_eArgError,
@@ -208,7 +218,13 @@ static VALUE emit_struct(VALUE self, VALUE name, VALUE _event)
 {
 	VALUE argv[3];
 	struct lwes_event_type_db *db = get_type_db(_event);
-	struct lwes_event *event = lwes_event_create(db, RSTRING_PTR(name));
+	struct lwes_event *event;
+	char *c, *cname = RSTRING_PTR(name);
+
+	if ((c = memrchr(cname, ':', RSTRING_LEN(name))))
+		cname = c + 1;
+
+	event = lwes_event_create(db, cname);
 
 	if (!event)
 		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
@@ -224,22 +240,51 @@ static VALUE emit_struct(VALUE self, VALUE name, VALUE _event)
 /*
  * call-seq:
  *   emitter = LWES::Emitter.new
+ *
  *   emitter.emit("EventName", :foo => "HI")
+ *
+ *   emitter.emit(EventStruct, :foo => "HI")
+ *
+ *   struct = EventStruct.new
+ *   struct.foo = "HI"
+ *   emitter.emit(struct)
  */
-static VALUE emitter_emit(VALUE self, VALUE name, VALUE event)
+static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 {
-	if (TYPE(name) != T_STRING)
-		rb_raise(rb_eArgError, "event name must be a String");
+	VALUE name = Qnil;
+	VALUE event = Qnil;
+	argc = rb_scan_args(argc, argv, "11", &name, &event);
 
-	switch (TYPE(event)) {
-	case T_HASH:
-		return emit_hash(self, name, event);
+	switch (TYPE(name)) {
+	case T_STRING:
+		if (TYPE(event) == T_HASH)
+			return emit_hash(self, name, event);
+		rb_raise(rb_eArgError,
+		         "second argument must be a hash when first "
+		         "is a String");
 	case T_STRUCT:
+		if (argc >= 2)
+			rb_raise(rb_eArgError,
+			         "second argument not allowed when first"
+			         " is a Struct");
+		event = name;
+		name = rb_class_name(CLASS_OF(event));
+		return emit_struct(self, name, event);
+	case T_CLASS:
+		if (TYPE(event) != T_HASH)
+			rb_raise(rb_eArgError,
+			         "second argument must be a Hash when first"
+			         " is a Class");
+		event = rb_funcall(name, id_new, 1, event);
+		name = rb_class_name(name);
 		return emit_struct(self, name, event);
 	default:
-		rb_raise(rb_eTypeError, "must be a Hash"); /* or Struct */
+		rb_raise(rb_eArgError,
+		         "bad argument: %s, must be a String, Struct or Class",
+			 RSTRING_PTR(rb_inspect(name)));
 	}
 
+	assert(0 && "should never get here");
 	return event;
 }
 
@@ -327,11 +372,12 @@ void lwesrb_init_emitter(void)
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_Emitter = rb_define_class_under(mLWES, "Emitter", rb_cObject);
 
-	rb_define_method(cLWES_Emitter, "emit", emitter_emit, 2);
+	rb_define_method(cLWES_Emitter, "emit", emitter_emit, -1);
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
 	LWESRB_MKSYM(TYPE_DB);
 	LWESRB_MKSYM(TYPE_LIST);
 	LWESRB_MKSYM(OPTIONAL);
+	id_new = rb_intern("new");
 }
