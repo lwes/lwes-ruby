@@ -10,7 +10,7 @@ static ID
 static int set_uint16(
 	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
 {
-	int32_t tmp = NUM2UINT(val);
+	int32_t tmp = NUM2INT(val);
 
 	if (tmp < 0)
 		rb_raise(rb_eRangeError, ":uint16 negative: %d", tmp);
