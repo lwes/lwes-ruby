@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
   s.email = %q{lwes-devel@lists.sourceforge.net}
   s.summary = %q{Ruby API for the Light Weight Event System}
   s.homepage = %q{http://www.lwes.org/}
+  s.extensions = %w(ext/lwes/extconf.rb)
   s.description = %q{
 The LWES Light-Weight Event System is a framework for allowing the exchange of
 information from many machines to many machines in a controlled, platform
