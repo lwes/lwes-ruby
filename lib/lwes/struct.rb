@@ -14,7 +14,7 @@ module LWES
     #               events are defined in the same ESF :file given above
     #   :parent   - parent class or module, the default is 'Object' putting
     #               the new class in the global namespace.
-    #   :event    - event name if it differs from the Ruby base class name
+    #   :name     - event name if it differs from the Ruby base class name
     #               given (or inferred) above.  For DRY-ness, you are
     #               recommended to keep your event names and Ruby class
     #               names in sync and not need this option.

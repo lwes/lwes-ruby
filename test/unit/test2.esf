@@ -1,0 +1,14 @@
+MetaEventInfo
+{
+  ip_addr SenderIP;
+}
+
+EventBool
+{
+  boolean B;
+}
+
+EventString
+{
+  string S;
+}

@@ -44,9 +44,23 @@ class TestStruct < Test::Unit::TestCase
   ]
 
   ESF_FILE = "#{File.dirname(__FILE__)}/test1.esf"
+  MULTI_EVENT_ESF = "#{File.dirname(__FILE__)}/test2.esf"
 
   def test_constants
     assert_instance_of Module, LWES, "LWES is not a module"
+  end
+
+  def test_multiple_events_in_esf
+    a = LWES::Struct.new(:file=>MULTI_EVENT_ESF, :class => :EventBool)
+    assert_equal "EventBool", a.name
+    b = LWES::Struct.new(:file=>MULTI_EVENT_ESF,
+                         :class => :EVENT_BOOL,
+                         :name => :EventBool)
+    assert_equal "EVENT_BOOL", b.name
+
+    e = assert_raises(RuntimeError) {
+      LWES::Struct.new(:file=>MULTI_EVENT_ESF)
+    }
   end
 
   def test_new_with_defaults
