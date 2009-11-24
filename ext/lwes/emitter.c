@@ -121,7 +121,7 @@ static int set_field(
 	default:
 		return lwesrb_event_set_num(event, name, type, val);
 	}
-	assert("you should never get here (set_field)");
+	assert(0 && "you should never get here (set_field)");
 	return -1;
 }
 
