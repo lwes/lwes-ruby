@@ -25,6 +25,15 @@ may support listening and journaling capabilities as time allows.
 
 See the SourceForge project.
 
+== INSTALL:
+
+This library is easy to install, if you have the LWES library already
+installed you can use that, otherwise the RubyGems installer will
+automatically download and install a private copy only for use with your
+gem.
+
+  gem install lwes
+
 == SYNOPSIS:
 
   require 'lwes'
