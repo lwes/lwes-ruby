@@ -103,36 +103,6 @@ class TestStruct < Test::Unit::TestCase
     assert_equal EXPECT_DB, a.get_event_def
   end
 
-  def test_optional
-    a = LWES::Struct.new(:file=>ESF_FILE,
-                         :class=>:Optional,
-                         :name=>:Event1,
-                         :optional => %w(SenderPort SiteID ReceiptTime))
-    expect_optional = {
-      :SenderPort => true,
-      :SiteID => true,
-      :ReceiptTime => true
-    }
-    assert_equal expect_optional, a.const_get(:OPTIONAL)
-  end
-
-  def test_optional_meta_event_info
-    expect = {
-      :ReceiptTime => true,
-      :SenderIP => true,
-      :SenderPort => true,
-      :SiteID => true,
-      :enc => true,
-      :st => true
-    }
-    a = LWES::Struct.new(:file=>ESF_FILE,
-                         :class=>:MetaOptional,
-                         :name=>:Event1,
-                         :optional => %w(MetaEventInfo))
-    assert_equal expect, a.const_get(:OPTIONAL)
-  end
-
-
   def test_new_initialize
     a = LWES::Struct.new(:file=>ESF_FILE,
                          :class=>:Init,
@@ -203,15 +173,6 @@ class TestStruct < Test::Unit::TestCase
     assert y.respond_to?(:ReceiptTime)
     assert y.respond_to?(:enc)
     assert y.respond_to?(:st)
-  end
-
-  def test_optional_regexp
-    a = LWES::Struct.new(:file=>ESF_FILE,
-                         :class=> :LWES_OptionalRe,
-                         :name=>:Event1,
-                         :optional=> %r(\AS))
-    expect = {:SenderIP=>true, :SenderPort=>true, :SiteID=>true}
-    assert_equal expect, LWES_OptionalRe::OPTIONAL
   end
 
 end

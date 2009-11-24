@@ -69,5 +69,4 @@ end
 
 ESF_FILE = "#{File.dirname(__FILE__)}/test1.esf"
 LWES::Struct.new(:file=>ESF_FILE,
-                 :parent => TestEmitStruct,
-                 :optional=> %r{\A([SR]|enc|st)})
+                 :parent => TestEmitStruct)

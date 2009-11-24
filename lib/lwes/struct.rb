@@ -15,10 +15,6 @@ module LWES
     #               given (or inferred) above.  For DRY-ness, you are
     #               recommended to keep your event names and Ruby class
     #               names in sync and not need this option.
-    #   :optional - Array of field names that are optional, the special
-    #               "MetaEventInfo" name makes all elements defined in
-    #               the MetaEventInfo section of the ESF is optional.
-    #               This may also be a regular expression.
     #   :skip     - Array of field names to skip from the Event defininition
     #               entirely, these could include fields that are only
     #               implemented by the Listener.  This may also be a
@@ -81,20 +77,6 @@ module LWES
       type_list = event_def.map { |(field,type)| [ field, field.to_s, type ] }
       tmp.const_set :TYPE_LIST, type_list
 
-      optional = tmp.const_set :OPTIONAL, {}
-      Array(options[:optional]).each do |x|
-        if Regexp === x
-          event_def.each { |(f,_)| optional[f] = true if x =~ f.to_s }
-        else
-          if x.to_sym == :MetaEventInfo
-            meta_event_info.nil? and
-              raise RuntimeError, "MetaEventInfo not defined in #{file}"
-            meta_event_info.each{ |(field,_)| optional[field] = true }
-          else
-            optional[x.to_sym] = true
-          end
-        end
-      end
       defaults = options[:defaults] || {}
       defaults = tmp.const_set :DEFAULTS, defaults.dup
       tmp.class_eval(&block) if block_given?

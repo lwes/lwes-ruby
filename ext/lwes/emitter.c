@@ -1,7 +1,7 @@
 #include "lwes_ruby.h"
 
 static VALUE cLWES_Emitter;
-static ID sym_TYPE_DB, sym_TYPE_LIST, sym_OPTIONAL;
+static ID sym_TYPE_DB, sym_TYPE_LIST;
 static ID id_new;
 
 #ifndef HAVE_MEMRCHR
@@ -139,7 +139,6 @@ static VALUE _emit_struct(VALUE _argv)
 	VALUE _event = argv[1];
 	struct lwes_event *event = (struct lwes_event *)argv[2];
 	VALUE type_list = rb_const_get(CLASS_OF(_event), SYM2ID(sym_TYPE_LIST));
-	VALUE optional = rb_const_get(CLASS_OF(_event), SYM2ID(sym_OPTIONAL));
 	long i = RARRAY_LEN(type_list);
 	VALUE *tmp;
 
@@ -151,17 +150,8 @@ static VALUE _emit_struct(VALUE _argv)
 		LWES_CONST_SHORT_STRING name;
 		LWES_TYPE type;
 
-		if (NIL_P(val)) {
+		if (NIL_P(val))
 			continue;
-
-			/* XXX check if we should care for optional fields */
-			if (rb_hash_aref(optional, inner[0]) == Qtrue)
-				continue;
-			rb_raise(rb_eArgError,
-			         "required member %s not set in %s",
-			         RSTRING_PTR(inner[1]),
-			         RSTRING_PTR(rb_inspect(_event)));
-		}
 
 		name = RSTRING_PTR(inner[1]);
 		type = NUM2INT(inner[2]);
@@ -378,6 +368,5 @@ void lwesrb_init_emitter(void)
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
 	LWESRB_MKSYM(TYPE_DB);
 	LWESRB_MKSYM(TYPE_LIST);
-	LWESRB_MKSYM(OPTIONAL);
 	id_new = rb_intern("new");
 }
