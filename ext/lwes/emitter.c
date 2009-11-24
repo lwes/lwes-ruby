@@ -6,12 +6,6 @@ static ID sym_TYPE_DB, sym_TYPE_LIST, sym_OPTIONAL;
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
 	struct lwes_emitter *emitter;
-
-	/*
-	 * map certain fields to certain types so we won't have to worry about
-	 * it later on in the Ruby API.
-	 */
-	VALUE field_types;
 };
 
 /* gets the _rb_lwes_emitter struct pointer from self */
@@ -22,14 +16,6 @@ static struct _rb_lwes_emitter * _rle(VALUE self)
 	Data_Get_Struct(self, struct _rb_lwes_emitter, rle);
 
 	return rle;
-}
-
-/* mark-and-sweep GC automatically calls this */
-static void rle_mark(void *ptr)
-{
-	struct _rb_lwes_emitter *rle = ptr;
-
-	rb_gc_mark(rle->field_types);
 }
 
 /* GC automatically calls this when object is finalized */
@@ -48,7 +34,7 @@ static VALUE rle_alloc(VALUE klass)
 	struct _rb_lwes_emitter *rle;
 
 	return Data_Make_Struct(klass, struct _rb_lwes_emitter,
-	                        rle_mark, rle_free, rle);
+	                        NULL, rle_free, rle);
 }
 
 /*
@@ -331,8 +317,6 @@ static VALUE _create(VALUE self, VALUE options)
 
 	if (!rle->emitter)
 		rb_raise(rb_eRuntimeError, "failed to create LWES emitter");
-
-	rle->field_types = rb_hash_new();
 
 	return self;
 }
