@@ -54,7 +54,7 @@ static int set_int32(
 	if (tmp > INT32_MAX)
 		rb_raise(rb_eRangeError, ":int32 too large: %lli", tmp);
 	if (tmp < INT32_MIN)
-		rb_raise(rb_eRangeError, ":int32 too large: %lli", tmp);
+		rb_raise(rb_eRangeError, ":int32 too small: %lli", tmp);
 
 	return lwes_event_set_INT_32(event, name, (LWES_INT_32)tmp);
 }
