@@ -27,12 +27,6 @@ int lwesrb_event_set_num(
 	LWES_TYPE type,
 	VALUE val);
 
-#ifndef HAVE_MEMRCHR
-# define memrchr(s,c,n) lwesrb_memrchr(s,c,n)
-#else
-extern void * memrchr(void const *s, int c, size_t n);
-#endif /* HAVE_MEMRCHR */
-
 #ifndef RSTRING_PTR
 #  define RSTRING_PTR(s) (RSTRING(s)->ptr)
 #  define RSTRING_LEN(s) (RSTRING(s)->len)

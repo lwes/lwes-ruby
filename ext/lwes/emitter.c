@@ -1,7 +1,7 @@
 #include "lwes_ruby.h"
 
 static VALUE cLWES_Emitter;
-static ID sym_TYPE_DB, sym_TYPE_LIST;
+static ID sym_TYPE_DB, sym_TYPE_LIST, sym_NAME;
 static ID id_new;
 
 /* the underlying struct for LWES::Emitter */
@@ -202,13 +202,7 @@ static VALUE emit_struct(VALUE self, VALUE name, VALUE _event)
 {
 	VALUE argv[3];
 	struct lwes_event_type_db *db = get_type_db(_event);
-	struct lwes_event *event;
-	char *c, *cname = RSTRING_PTR(name);
-
-	if ((c = memrchr(cname, ':', RSTRING_LEN(name))))
-		cname = c + 1;
-
-	event = lwes_event_create(db, cname);
+	struct lwes_event *event = lwes_event_create(db, RSTRING_PTR(name));
 
 	if (!event)
 		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
@@ -252,15 +246,20 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 			         "second argument not allowed when first"
 			         " is a Struct");
 		event = name;
-		name = rb_class_name(CLASS_OF(event));
+		name = rb_const_get(CLASS_OF(event), SYM2ID(sym_NAME));
 		return emit_struct(self, name, event);
 	case T_CLASS:
 		if (TYPE(event) != T_HASH)
 			rb_raise(rb_eArgError,
 			         "second argument must be a Hash when first"
 			         " is a Class");
+
+		/*
+		 * we can optimize this so there's no intermediate
+		 * struct created
+		 */
 		event = rb_funcall(name, id_new, 1, event);
-		name = rb_class_name(name);
+		name = rb_const_get(name, SYM2ID(sym_NAME));
 		return emit_struct(self, name, event);
 	default:
 		rb_raise(rb_eArgError,
@@ -362,5 +361,6 @@ void lwesrb_init_emitter(void)
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
 	LWESRB_MKSYM(TYPE_DB);
 	LWESRB_MKSYM(TYPE_LIST);
+	LWESRB_MKSYM(NAME);
 	id_new = rb_intern("new");
 }

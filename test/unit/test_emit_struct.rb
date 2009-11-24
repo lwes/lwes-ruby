@@ -81,8 +81,21 @@ class TestEmitStruct < Test::Unit::TestCase
     assert out.readlines.empty?
   end
 
+  def test_emit_alt_class_name
+    out = lwes_listener do
+      emitter = LWES::Emitter.new(@options)
+      emitter.emit(Event, :t_uint32 => 16384)
+    end
+    out = out.readlines
+    assert_match %r{^Event1\[\d+\]}, out.first
+  end
+
 end
 
 ESF_FILE = "#{File.dirname(__FILE__)}/test1.esf"
 LWES::Struct.new(:file=>ESF_FILE,
                  :parent => TestEmitStruct)
+LWES::Struct.new(:file=>ESF_FILE,
+                 :parent => TestEmitStruct,
+                 :name => "Event1",
+                 :class => "Event")

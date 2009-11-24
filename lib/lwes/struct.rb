@@ -80,6 +80,7 @@ module LWES
       tmp = ::Struct.new(*(event_def.map { |(field,_)| field }))
       tmp = parent.const_set(klass, tmp)
       tmp.const_set :TYPE_DB, db
+      tmp.const_set :NAME, name.to_s
       ed = tmp.const_set :EVENT_DEF, {}
       event_def.each { |(field,type)| ed[field] = type }
       type_list = event_def.map { |(field,type)| [ field, field.to_s, type ] }
