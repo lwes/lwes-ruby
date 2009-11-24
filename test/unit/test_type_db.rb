@@ -52,4 +52,10 @@ class TestTypeDB < Test::Unit::TestCase
     assert_equal expect, result
   end
 
+  def test_create_classes
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test2.esf")
+    classes = tdb.create_classes!(:parent => TestTypeDB)
+    classes.each { |k| assert_kind_of Class, k }
+  end
+
 end

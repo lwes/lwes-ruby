@@ -1,0 +1,17 @@
+MetaEventInfo
+{
+  ip_addr SenderIP;
+}
+
+Event1
+{
+  int32 started;
+  int32 finished;
+  ip_addr remote_addr;
+}
+
+Event2
+{
+  string field1;
+  string field2;
+}

@@ -1,23 +1,90 @@
-To build:
+= LWES - Light Weight Event System API for Ruby
 
-1. Make install lwes code. It will install by default into /usr/local. Make
-sure you note the version and change the commands below to match.
+* http://www.lwes.org
+* http://sourceforge.net/projects/lwes
 
-2. Build the swig wrapper and library
+== DESCRIPTION:
 
-% swig -I/usr/local/include/lwes-0/lwes-0.22.2 -ruby lwes.i
+The LWES Light-Weight Event System is a framework for allowing the exchange of
+information from many machines to many machines in a controlled, platform
+neutral, language neutral way.  The exchange of information is done in a
+connectless fashion using multicast or unicast UDP, and using self describing
+data so that any platform or language can translate it to it's local dialect.
 
-% ruby extconf.rb \
- --with-lwes-include=/usr/local/include/lwes-0/lwes-0.22.2 \
- --with-lwes-lib=/usr/local/lib
+Instead of blindly using SWIG-generated bindings and exposing users to the
+underlying C APIs, we've wrapped the underlying C library bindings in an
+easy-to-use Ruby library.
 
-% make
+== FEATURES:
 
-To create gem package:
+* easy-to-use, "Ruby-ish" API, no manual memory management
+* optional ESF (event specification format) validation support
 
-% gem build pkg/lwes_functions.gemspec
+== SUPPORT:
+
+See the SourceForge project.
+
+== SYNOPSIS:
+
+  require 'lwes'
+
+  # create an Emitter which may be used for the lifetime of your process
+  emitter = LWES::Emitter.new(:address => '224.1.1.11',
+                              :port => 12345,
+                              :heartbeat => 30, # nil to disable
+                              :ttl => 1) # nil for no ttl
+
+  # parse your ESF file at startup, the example below assumes you
+  # have "Event1" and "Event2" defined in your ESF file:
+  type_db = LWES::TypeDB.new("my_events.esf")
+
+  # create classes to use, by default and to encourage DRY-ness,
+  # we map each event in the ESF file to a class
+  # Optionally, you may specify :parent => module/namespace
+  type_db.create_classes! :parent => MyApp
+
+  # inside your application, you may now do this to slowly build up
+  # fields for the event
+  my_event = MyApp::Event1.new
+  my_event.started = Time.now.to_i
+  my_event.remote_addr = "192.168.0.1"
+  # ...do a lot of stuff here in between...
+  my_event.field1 = value1
+  my_event.field2 = value2
+  my_event.field3 = value3
+  my_event.finished = Time.now.to_i
+  emitter.emit my_event
+
+  # Alternatively, if you know ahead of time all the fields you want to
+  # set for an event, you can emit an event in one step:
+
+  emitter.emit MyApp::Event2, :field1 => value1, :field2 => value2 # ...
 
 
+== NON-ESF USERS:
 
+For prototyping and development, it may be easier to not use an ESF
+file.  In those cases, you may skip the TypeDB steps entirely and
+just use an emitter to send Hash objects:
 
-For examples on how to use lwes_functions.rb, look in the testing directory.
+  emitter = LWES::Emitter.new(:address => '224.1.1.11',
+                              :port => 12345,
+                              :heartbeat => 30, # nil to disable
+                              :ttl => 1) # nil for no ttl
+
+  # Since we can't reliably map certain Ruby types to LWES types, you'll
+  # have to specify them explicitly for IP addresses and all Integer
+  # types.
+  event = {
+    :time_sec => [ :int32, Time.now.to_i ],
+    :time_usec => [ :int32, Time.now.tv_usec ],
+    :remote_addr => [ :ip_addr, "192.168.0.1" ],
+  }
+
+  # Strings and Boolean values are easily mapped, however:
+  event[:field1] = "String value"
+  event[:boolean1] = true
+  event[:boolean2] = false
+
+  # finally, we just emit the hash with any given name
+  emitter.emit "Event3", event
