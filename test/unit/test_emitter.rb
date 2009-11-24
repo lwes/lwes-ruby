@@ -193,6 +193,13 @@ class TestEmitter < Test::Unit::TestCase
     assert_equal 1, lines.grep(/\Azero/).size
   end
 
+  def test_emit_uint64
+    emitter = LWES::Emitter.new(@options)
+    assert_nothing_raised {
+      emitter.emit("Foo", { :uint64 => [ :uint64, 10_000_000_000 ] })
+    }
+  end
+
   def test_close
     emitter = LWES::Emitter.new(@options)
     assert_nil emitter.close

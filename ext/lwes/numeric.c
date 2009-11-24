@@ -65,12 +65,12 @@ static int set_uint64(
 	unsigned LONG_LONG tmp = NUM2ULL(val); /* can raise RangeError */
 	ID type = TYPE(val);
 
-	if ((type == T_FIXNUM && FIX2INT(val) < 0) ||
+	if ((type == T_FIXNUM && FIX2LONG(val) < 0) ||
 	    (type == T_BIGNUM && RTEST(rb_funcall(val, '<', 1, INT2FIX(0)))))
 		rb_raise(rb_eRangeError, ":uint64 negative: %s",
 		         RSTRING_PTR(rb_inspect(val)));
 
-	return lwes_event_set_U_INT_32(event, name, (LWES_U_INT_64)tmp);
+	return lwes_event_set_U_INT_64(event, name, (LWES_U_INT_64)tmp);
 }
 
 static int set_int64(
@@ -78,7 +78,7 @@ static int set_int64(
 {
 	LONG_LONG tmp = NUM2LL(val); /* can raise RangeError */
 
-	return lwes_event_set_INT_32(event, name, (LWES_INT_64)tmp);
+	return lwes_event_set_INT_64(event, name, (LWES_INT_64)tmp);
 }
 
 static int set_ip_addr(
