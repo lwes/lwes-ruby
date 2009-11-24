@@ -13,7 +13,8 @@ data so that any platform or language can translate it to it's local dialect.
 
 Instead of blindly using SWIG-generated bindings and exposing users to the
 underlying C APIs, we've wrapped the underlying C library bindings in an
-easy-to-use Ruby library.
+easy-to-use Ruby library.  Currently we only support emitting events but
+may support listening and journaling capabilities as time allows.
 
 == FEATURES:
 
