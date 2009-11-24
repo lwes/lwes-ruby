@@ -78,7 +78,8 @@ module LWES
       tmp.const_set :TYPE_DB, db
       ed = tmp.const_set :EVENT_DEF, {}
       event_def.each { |(field,type)| ed[field] = type }
-      tmp.const_set :TYPE_LIST, event_def
+      type_list = event_def.map { |(field,type)| [ field, field.to_s, type ] }
+      tmp.const_set :TYPE_LIST, type_list
 
       optional = tmp.const_set :OPTIONAL, {}
       Array(options[:optional]).each do |x|

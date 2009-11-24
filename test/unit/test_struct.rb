@@ -24,23 +24,23 @@ class TestStruct < Test::Unit::TestCase
   }
   EXPECT_LIST = [
     # class-specific fields first
-    [ :t_bool, LWES::BOOLEAN],
-    [ :t_int16, LWES::INT_16 ],
-    [ :t_int32, LWES::INT_32],
-    [ :t_int64, LWES::INT_64],
-    [ :t_ip_addr, LWES::IP_ADDR],
-    [ :t_string, LWES::STRING],
-    [ :t_uint16, LWES::U_INT_16],
-    [ :t_uint32, LWES::U_INT_32],
-    [ :t_uint64, LWES::U_INT_64],
+    [ :t_bool, "t_bool", LWES::BOOLEAN],
+    [ :t_int16, "t_int16", LWES::INT_16 ],
+    [ :t_int32, "t_int32", LWES::INT_32],
+    [ :t_int64, "t_int64", LWES::INT_64],
+    [ :t_ip_addr, "t_ip_addr", LWES::IP_ADDR],
+    [ :t_string, "t_string", LWES::STRING],
+    [ :t_uint16, "t_uint16", LWES::U_INT_16],
+    [ :t_uint32, "t_uint32", LWES::U_INT_32],
+    [ :t_uint64, "t_uint64", LWES::U_INT_64],
 
     # MetaEventInfo
-    [ :ReceiptTime, LWES::INT_64],
-    [ :SenderIP, LWES::IP_ADDR],
-    [ :SenderPort, LWES::U_INT_16],
-    [ :SiteID, LWES::U_INT_16],
-    [ :enc, LWES::INT_16],
-    [ :st, LWES::STRING],
+    [ :ReceiptTime, "ReceiptTime", LWES::INT_64],
+    [ :SenderIP, "SenderIP", LWES::IP_ADDR],
+    [ :SenderPort, "SenderPort", LWES::U_INT_16],
+    [ :SiteID, "SiteID", LWES::U_INT_16],
+    [ :enc, "enc", LWES::INT_16],
+    [ :st, "st", LWES::STRING],
   ]
 
   ESF_FILE = "#{File.dirname(__FILE__)}/test1.esf"
