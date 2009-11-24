@@ -4,12 +4,6 @@ static VALUE cLWES_Emitter;
 static ID sym_TYPE_DB, sym_TYPE_LIST;
 static ID id_new;
 
-#ifndef HAVE_MEMRCHR
-# define memrchr(s,c,n) lwesrb_memrchr(s,c,n)
-#else
-extern void * memrchr(void const *s, int c, size_t n);
-#endif /* HAVE_MEMRCHR */
-
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
 	struct lwes_emitter *emitter;
