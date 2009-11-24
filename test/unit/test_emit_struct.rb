@@ -5,64 +5,80 @@ class TestEmitStruct < Test::Unit::TestCase
   def setup
     assert_kind_of Class, self.class.const_get(:Event1)
     # assert self.class.const_get(:Event1).kind_of?(Struct)
-    @options = {
-      :address => ENV["LWES_TEST_ADDRESS"] || "127.0.0.1",
-      :iface => ENV["LWES_TEST_IFACE"] || "0.0.0.0",
-      :port => ENV["LWES_TEST_PORT"] ? ENV["LWES_TEST_PORT"].to_i : 12345,
-      :ttl => 60, # nil for no ttl)
-    }
+    @options = LISTENER_DEFAULTS.dup
   end
 
   def test_emit_struct_full
-    assert_nothing_raised do
-      emitter = LWES::Emitter.new(@options)
-      s = Event1.new
-      s.t_bool = true
-      s.t_int16 = -1000
-      s.t_uint16 = 1000
-      s.t_int32 = -64444
-      s.t_uint32 = 64444
-      s.t_int64 = 10_000_000_000
-      s.t_uint64 = 10_000_000_000
-      s.t_ip_addr = '192.168.0.1'
-      s.t_string = "STRING"
-      emitter.emit(s)
+    s = nil
+    out = lwes_listener do
+      assert_nothing_raised do
+        emitter = LWES::Emitter.new(@options)
+        s = Event1.new
+        s.t_bool = true
+        s.t_int16 = -1000
+        s.t_uint16 = 1000
+        s.t_int32 = -64444
+        s.t_uint32 = 64444
+        s.t_int64 = 10_000_000_000
+        s.t_uint64 = 10_000_000_000
+        s.t_ip_addr = '192.168.0.1'
+        s.t_string = "STRING"
+        emitter.emit(s)
+      end
+    end
+    out = out.readlines
+    s.members.each do |m|
+      value = s[m.to_sym] or next
+      regex = /\b#{m} = #{value};/
+      assert_equal 1, out.grep(regex).size,
+                   "#{regex.inspect} didn't match #{out.inspect}"
     end
   end
 
   def test_emit_from_class
-    assert_nothing_raised do
-      emitter = LWES::Emitter.new(@options)
-      opt = {
-        :t_bool => true,
-        :t_int16 => -1000,
-        :t_uint16 => 1000,
-        :t_int32 => -64444,
-        :t_uint32 => 64444,
-        :t_int64 => 10_000_000_000,
-        :t_uint64 => 10_000_000_000,
-        :t_ip_addr => '192.168.0.1',
-        :t_string => "STRING",
-      }
-      emitter.emit(Event1, opt)
+    opt = {
+      :t_bool => true,
+      :t_int16 => -1000,
+      :t_uint16 => 1000,
+      :t_int32 => -64444,
+      :t_uint32 => 64444,
+      :t_int64 => 10_000_000_000,
+      :t_uint64 => 10_000_000_000,
+      :t_ip_addr => '192.168.0.1',
+      :t_string => "STRING",
+    }
+    out = lwes_listener do
+      assert_nothing_raised do
+        emitter = LWES::Emitter.new(@options)
+        emitter.emit(Event1, opt)
+      end
+    end
+    out = out.readlines
+    opt.each do |m, value|
+      regex = /\b#{m} = #{value};/
+      assert_equal 1, out.grep(regex).size,
+                   "#{regex.inspect} didn't match #{out.inspect}"
     end
   end
 
   def test_emit_from_class_bad_type
-    e = assert_raises(TypeError) do
-      emitter = LWES::Emitter.new(@options)
-      opt = {
-        :t_int16 => -1000,
-        :t_uint16 => 1000,
-        :t_int32 => -64444,
-        :t_uint32 => 64444,
-        :t_int64 => 10_000_000_000,
-        :t_uint64 => 10_000_000_000,
-        :t_ip_addr => '192.168.0.1',
-        :t_string => true, #"STRING",
-      }
-      emitter.emit(Event1, opt)
+    out = lwes_listener do
+      e = assert_raises(TypeError) do
+        emitter = LWES::Emitter.new(@options)
+        opt = {
+          :t_int16 => -1000,
+          :t_uint16 => 1000,
+          :t_int32 => -64444,
+          :t_uint32 => 64444,
+          :t_int64 => 10_000_000_000,
+          :t_uint64 => 10_000_000_000,
+          :t_ip_addr => '192.168.0.1',
+          :t_string => true, #"STRING",
+        }
+        emitter.emit(Event1, opt)
+      end
     end
+    assert out.readlines.empty?
   end
 
 end
