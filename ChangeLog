@@ -1,2 +1,5 @@
+Version 0.1.1 (erik-s-chang)
+  * add support for namespaced ESFs
+
 Version 0.1.0 (erik-s-chang)
   * remove SWIG ugliness, friendly new Rubyish API
