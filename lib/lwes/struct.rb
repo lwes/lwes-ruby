@@ -78,7 +78,19 @@ module LWES
       end
 
       tmp = ::Struct.new(*(event_def.map { |(field,_)| field }))
-      tmp = parent.const_set(klass, tmp)
+      components = klass.to_s.split(/::/)
+      components.each_with_index do |component, i|
+        if i == (components.size - 1)
+          tmp = parent.const_set(component, tmp)
+        else
+          parent = begin
+            parent.const_get(component)
+          rescue NameError
+            eval "module #{parent.name}::#{component}; end"
+            parent.const_get(component)
+          end
+        end
+      end
       tmp.const_set :TYPE_DB, db
       tmp.const_set :NAME, name.to_s
       ed = tmp.const_set :EVENT_DEF, {}

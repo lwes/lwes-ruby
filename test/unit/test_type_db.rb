@@ -1,6 +1,9 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 require 'tempfile'
 
+module Abcde
+end
+
 class TestTypeDB < Test::Unit::TestCase
 
   def test_constants
@@ -56,6 +59,15 @@ class TestTypeDB < Test::Unit::TestCase
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test2.esf")
     classes = tdb.create_classes!(:parent => TestTypeDB)
     classes.each { |k| assert_kind_of Class, k }
+  end
+
+  def test_namespaced_esf
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/namespaced.esf")
+    classes = tdb.create_classes!(:parent => Abcde)
+    expect = %w(Abcde::A::B::C::Event
+                Abcde::A::B::C::Event::Bool
+                Abcde::A::B::C::Event::String)
+    assert_equal expect, classes.map { |i| i.to_s }
   end
 
 end

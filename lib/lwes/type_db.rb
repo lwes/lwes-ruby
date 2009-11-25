@@ -15,7 +15,8 @@ module LWES
     # file, then the classes MyEvents::Event1 and MyEvents::Event2 should
     # now be accessible.
     def create_classes!(options = {})
-      (to_hash.keys - [ :MetaEventInfo ]).map do |klass|
+      classes = to_hash.keys - [ :MetaEventInfo ]
+      classes.sort { |a,b| a.to_s.size <=> b.to_s.size }.map do |klass|
         LWES::Struct.new({ :db => self, :class => klass }.merge(options))
       end
     end

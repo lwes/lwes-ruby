@@ -1,0 +1,19 @@
+MetaEventInfo
+{
+  ip_addr SenderIP;
+}
+
+A::B::C::Event
+{
+  boolean ok;
+}
+
+A::B::C::Event::Bool
+{
+  boolean B;
+}
+
+A::B::C::Event::String
+{
+  string S;
+}
