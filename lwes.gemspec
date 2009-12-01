@@ -1,6 +1,8 @@
+require 'lwes'
+
 Gem::Specification.new do |s|
   s.name = %q{lwes}
-  s.version = "0.1.1"
+  s.version = "0.1.2"
   s.date = Time.now
   s.authors = ["Erik S. Chang", "Frank Maritato"]
   s.email = %q{lwes-devel@lists.sourceforge.net}

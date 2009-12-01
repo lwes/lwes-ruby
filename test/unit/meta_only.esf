@@ -1,0 +1,8 @@
+MetaEventInfo
+{
+  ip_addr SenderIP;
+}
+
+Meta::Info::Only
+{
+}
