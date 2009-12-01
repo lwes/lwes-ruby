@@ -70,4 +70,7 @@ class TestTypeDB < Test::Unit::TestCase
     assert_equal expect, classes.map { |i| i.to_s }
   end
 
+  def test_invalid_file_arg_error
+    assert_raises(ArgumentError) { LWES::TypeDB.new(nil) }
+  end
 end

@@ -26,6 +26,9 @@ static VALUE tdb_init(VALUE self, VALUE path)
 {
 	struct _tdb *tdb;
 
+	if (TYPE(path) != T_STRING)
+		rb_raise(rb_eArgError, "path must be a string");
+
 	Data_Get_Struct(self, struct _tdb, tdb);
 	if (tdb->db)
 		rb_raise(rb_eRuntimeError, "ESF already initialized");
