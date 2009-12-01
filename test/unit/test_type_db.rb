@@ -73,4 +73,14 @@ class TestTypeDB < Test::Unit::TestCase
   def test_invalid_file_arg_error
     assert_raises(ArgumentError) { LWES::TypeDB.new(nil) }
   end
+
+  def test_empty_struct_ok
+    # even with LWES 0.22.3, the "ERROR" message is non-fatal
+    # the next version (as of lwes trunk r344) will no longer
+    # spew a non-fatal "ERROR" message.
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/meta_only.esf")
+    classes = tdb.create_classes!
+    assert_equal %w(Meta::Info::Only), classes.map { |x| x.to_s }
+  end
+
 end
