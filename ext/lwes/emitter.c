@@ -232,6 +232,13 @@ static VALUE emit_struct(VALUE self, VALUE _event)
 	return _event;
 }
 
+/*
+ * call-seq:
+ *   emitter = LWES::Emitter.new
+ *   event = EventStruct.new
+ *   event.foo = "bar"
+ *   emitter << event
+ */
 static VALUE emitter_ltlt(VALUE self, VALUE event)
 {
 	if (TYPE(event) != T_STRUCT)
