@@ -63,7 +63,7 @@ gem.
   my_event.field2 = value2
   my_event.field3 = value3
   my_event.finished = Time.now.to_i
-  emitter.emit my_event
+  emitter << my_event
 
   # Alternatively, if you know ahead of time all the fields you want to
   # set for an event, you can emit an event in one step:
