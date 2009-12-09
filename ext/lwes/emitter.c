@@ -195,9 +195,9 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE _event)
 	return _event;
 }
 
-static struct lwes_event_type_db * get_type_db(VALUE event)
+static struct lwes_event_type_db * get_type_db(VALUE event_class)
 {
-	VALUE type_db = rb_const_get(CLASS_OF(event), id_TYPE_DB);
+	VALUE type_db = rb_const_get(event_class, id_TYPE_DB);
 
         if (CLASS_OF(type_db) != cLWES_TypeDB)
 		rb_raise(rb_eArgError, "class does not have valid TYPE_DB");
@@ -208,9 +208,9 @@ static struct lwes_event_type_db * get_type_db(VALUE event)
 static VALUE emit_struct(VALUE self, VALUE _event)
 {
 	VALUE argv[4];
-	struct lwes_event_type_db *db = get_type_db(_event);
-	struct lwes_event *event;
 	VALUE event_class = CLASS_OF(_event);
+	struct lwes_event_type_db *db = get_type_db(event_class);
+	struct lwes_event *event;
 	VALUE name = rb_const_get(event_class, id_NAME);
 	VALUE type_list = rb_const_get(event_class, id_TYPE_LIST);
 
