@@ -1,7 +1,7 @@
 #include "lwes_ruby.h"
 
 static VALUE cLWES_Emitter;
-static ID sym_TYPE_DB, sym_TYPE_LIST, sym_NAME;
+static ID id_TYPE_DB, id_TYPE_LIST, id_NAME;
 static ID id_new;
 
 /* the underlying struct for LWES::Emitter */
@@ -132,7 +132,7 @@ static VALUE _emit_struct(VALUE _argv)
 	VALUE self = argv[0];
 	VALUE _event = argv[1];
 	struct lwes_event *event = (struct lwes_event *)argv[2];
-	VALUE type_list = rb_const_get(CLASS_OF(_event), SYM2ID(sym_TYPE_LIST));
+	VALUE type_list = rb_const_get(CLASS_OF(_event), id_TYPE_LIST);
 	long i = RARRAY_LEN(type_list);
 	VALUE *tmp;
 
@@ -193,7 +193,7 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE _event)
 
 static struct lwes_event_type_db * get_type_db(VALUE event)
 {
-	VALUE type_db = rb_const_get(CLASS_OF(event), SYM2ID(sym_TYPE_DB));
+	VALUE type_db = rb_const_get(CLASS_OF(event), id_TYPE_DB);
 
 	return lwesrb_get_type_db(type_db);
 }
@@ -203,7 +203,7 @@ static VALUE emit_struct(VALUE self, VALUE _event)
 	VALUE argv[3];
 	struct lwes_event_type_db *db = get_type_db(_event);
 	struct lwes_event *event;
-	VALUE name = rb_const_get(CLASS_OF(_event), SYM2ID(sym_NAME));
+	VALUE name = rb_const_get(CLASS_OF(_event), id_NAME);
 
 	if (TYPE(name) != T_STRING)
 		rb_raise(rb_eArgError,
@@ -375,8 +375,8 @@ void lwesrb_init_emitter(void)
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
-	LWESRB_MKSYM(TYPE_DB);
-	LWESRB_MKSYM(TYPE_LIST);
-	LWESRB_MKSYM(NAME);
-	id_new = rb_intern("new");
+	LWESRB_MKID(TYPE_DB);
+	LWESRB_MKID(TYPE_LIST);
+	LWESRB_MKID(NAME);
+        LWESRB_MKID(new);
 }
