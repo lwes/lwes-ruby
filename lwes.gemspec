@@ -33,6 +33,8 @@ lib/lwes/struct.rb
 lib/lwes/type_db.rb
 lwes.gemspec
 test/test_helper.rb
+test/unit/meta_only.esf
+test/unit/namespaced.esf
 test/unit/test1.esf
 test/unit/test2.esf
 test/unit/test_emit_struct.rb

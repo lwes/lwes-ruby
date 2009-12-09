@@ -37,7 +37,8 @@ unless have_library('lwes') && have_header('lwes.h')
       FileUtils.rm_rf(dir)
       system('tar', 'zxf', tgz) or abort "tar failed with #{$?}"
       Dir.chdir(dir) do
-        system("./configure", "--prefix=#{inst}", "--disable-hardcore") or
+        args = %w(--disable-hardcore --with-pic --disable-dependency-tracking)
+        system("./configure", "--prefix=#{inst}", *args) or
           abort "configure failed with #{$?}"
         system("make") or abort "make failed with #{$?}"
         system("make", "install") or abort "make install failed with #{$?}"
@@ -46,7 +47,8 @@ unless have_library('lwes') && have_header('lwes.h')
       File.open("#{inst}/.ok", "wb") { }
     end
     $CFLAGS = "-I#{inst}/include/lwes-0 #{$CFLAGS}"
-    $LDFLAGS = "-Wl,-R#{inst}/lib -L#{inst}/lib #{$LDFLAGS}"
+    Dir.glob("#{inst}/lib/*") { |f| f =~ /\.l?a\z/ or FileUtils.rm_rf(f) }
+    $LDFLAGS = "-L#{inst}/lib #{$LDFLAGS}"
     have_library('lwes') && have_header('lwes.h') or
       abort "installation failed"
   end
