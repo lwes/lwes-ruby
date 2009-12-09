@@ -198,12 +198,19 @@ static struct lwes_event_type_db * get_type_db(VALUE event)
 	return lwesrb_get_type_db(type_db);
 }
 
-static VALUE emit_struct(VALUE self, VALUE name, VALUE _event)
+static VALUE emit_struct(VALUE self, VALUE _event)
 {
 	VALUE argv[3];
 	struct lwes_event_type_db *db = get_type_db(_event);
-	struct lwes_event *event = lwes_event_create(db, RSTRING_PTR(name));
+	struct lwes_event *event;
+	VALUE name = rb_const_get(CLASS_OF(_event), SYM2ID(sym_NAME));
 
+	if (TYPE(name) != T_STRING)
+		rb_raise(rb_eArgError,
+		         "could not get event NAME from Struct: %s",
+		         RSTRING_PTR(rb_inspect(_event)));
+
+	event = lwes_event_create(db, RSTRING_PTR(name));
 	if (!event)
 		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
 
@@ -213,6 +220,16 @@ static VALUE emit_struct(VALUE self, VALUE name, VALUE _event)
 	rb_ensure(_emit_struct, (VALUE)&argv, _destroy_event, (VALUE)event);
 
 	return _event;
+}
+
+static VALUE emitter_ltlt(VALUE self, VALUE event)
+{
+	if (TYPE(event) != T_STRUCT)
+		rb_raise(rb_eArgError,
+		         "Must be a Struct: %s",
+			 RSTRING_PTR(rb_inspect(event)));
+
+	return emit_struct(self, event);
 }
 
 /*
@@ -246,8 +263,7 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 			         "second argument not allowed when first"
 			         " is a Struct");
 		event = name;
-		name = rb_const_get(CLASS_OF(event), SYM2ID(sym_NAME));
-		return emit_struct(self, name, event);
+		return emit_struct(self, event);
 	case T_CLASS:
 		if (TYPE(event) != T_HASH)
 			rb_raise(rb_eArgError,
@@ -259,8 +275,7 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 		 * struct created
 		 */
 		event = rb_funcall(name, id_new, 1, event);
-		name = rb_const_get(name, SYM2ID(sym_NAME));
-		return emit_struct(self, name, event);
+		return emit_struct(self, event);
 	default:
 		rb_raise(rb_eArgError,
 		         "bad argument: %s, must be a String, Struct or Class",
@@ -355,6 +370,7 @@ void lwesrb_init_emitter(void)
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_Emitter = rb_define_class_under(mLWES, "Emitter", rb_cObject);
 
+	rb_define_method(cLWES_Emitter, "<<", emitter_ltlt, 1);
 	rb_define_method(cLWES_Emitter, "emit", emitter_emit, -1);
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
