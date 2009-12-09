@@ -9,6 +9,8 @@
 #define LWESRB_MKSYM(SYM) sym_##SYM = ID2SYM(rb_intern(#SYM))
 #define LWESRB_MKID(NAME) id_##NAME = rb_intern(#NAME)
 
+extern VALUE cLWES_TypeDB;
+
 struct lwes_event_type_db * lwesrb_get_type_db(VALUE self);
 
 void lwesrb_init_type_db(void);

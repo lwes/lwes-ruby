@@ -1,11 +1,27 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
+class InvalidStruct1 < Struct.new(:invalid)
+  TYPE_DB = []
+end
+
 class TestEmitStruct < Test::Unit::TestCase
 
   def setup
     assert_kind_of Class, self.class.const_get(:Event1)
     # assert self.class.const_get(:Event1).kind_of?(Struct)
     @options = LISTENER_DEFAULTS.dup
+  end
+
+  def test_emit_non_lwes_struct
+    emitter = LWES::Emitter.new(@options)
+    assert_raise(ArgumentError) { emitter << InvalidStruct1.new }
+  end
+
+  def test_emit_crap
+    emitter = LWES::Emitter.new(@options)
+    assert_raise(ArgumentError) { emitter << "HHI" }
+    assert_raise(ArgumentError) { emitter << [] }
+    assert_raise(ArgumentError) { emitter << {} }
   end
 
   def test_emit_struct_full

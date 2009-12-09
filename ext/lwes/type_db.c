@@ -1,6 +1,6 @@
 #include "lwes_ruby.h"
 
-static VALUE cLWES_TypeDB;
+VALUE cLWES_TypeDB;
 
 struct _tdb {
 	struct lwes_event_type_db *db;

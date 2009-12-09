@@ -132,10 +132,14 @@ static VALUE _emit_struct(VALUE _argv)
 	VALUE self = argv[0];
 	VALUE _event = argv[1];
 	struct lwes_event *event = (struct lwes_event *)argv[2];
-	VALUE type_list = rb_const_get(CLASS_OF(_event), id_TYPE_LIST);
-	long i = RARRAY_LEN(type_list);
+	VALUE type_list = argv[3];
+	long i;
 	VALUE *tmp;
 
+	if (TYPE(type_list) != T_ARRAY)
+		rb_raise(rb_eArgError, "could not get TYPE_LIST const");
+
+	i = RARRAY_LEN(type_list);
 	for (tmp = RARRAY_PTR(type_list); --i >= 0; tmp++) {
 		/* inner: [ :field_sym, "field_name", type ] */
 		VALUE *inner = RARRAY_PTR(*tmp);
@@ -195,19 +199,24 @@ static struct lwes_event_type_db * get_type_db(VALUE event)
 {
 	VALUE type_db = rb_const_get(CLASS_OF(event), id_TYPE_DB);
 
+        if (CLASS_OF(type_db) != cLWES_TypeDB)
+		rb_raise(rb_eArgError, "class does not have valid TYPE_DB");
+
 	return lwesrb_get_type_db(type_db);
 }
 
 static VALUE emit_struct(VALUE self, VALUE _event)
 {
-	VALUE argv[3];
+	VALUE argv[4];
 	struct lwes_event_type_db *db = get_type_db(_event);
 	struct lwes_event *event;
-	VALUE name = rb_const_get(CLASS_OF(_event), id_NAME);
+	VALUE event_class = CLASS_OF(_event);
+	VALUE name = rb_const_get(event_class, id_NAME);
+	VALUE type_list = rb_const_get(event_class, id_TYPE_LIST);
 
-	if (TYPE(name) != T_STRING)
+	if (TYPE(name) != T_STRING || TYPE(type_list) != T_ARRAY)
 		rb_raise(rb_eArgError,
-		         "could not get event NAME from Struct: %s",
+		         "could not get class NAME or TYPE_LIST from: %s",
 		         RSTRING_PTR(rb_inspect(_event)));
 
 	event = lwes_event_create(db, RSTRING_PTR(name));
@@ -217,6 +226,7 @@ static VALUE emit_struct(VALUE self, VALUE _event)
 	argv[0] = self;
 	argv[1] = _event;
 	argv[2] = (VALUE)event;
+	argv[3] = type_list;
 	rb_ensure(_emit_struct, (VALUE)&argv, _destroy_event, (VALUE)event);
 
 	return _event;
@@ -227,7 +237,7 @@ static VALUE emitter_ltlt(VALUE self, VALUE event)
 	if (TYPE(event) != T_STRUCT)
 		rb_raise(rb_eArgError,
 		         "Must be a Struct: %s",
-			 RSTRING_PTR(rb_inspect(event)));
+		         RSTRING_PTR(rb_inspect(event)));
 
 	return emit_struct(self, event);
 }
