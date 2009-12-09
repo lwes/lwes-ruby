@@ -1,5 +1,3 @@
-require 'lwes'
-
 Gem::Specification.new do |s|
   s.name = %q{lwes}
   s.version = "0.1.2"

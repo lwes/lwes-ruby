@@ -46,7 +46,7 @@ unless have_library('lwes') && have_header('lwes.h')
       File.open("#{inst}/.ok", "wb") { }
     end
     $CFLAGS = "-I#{inst}/include/lwes-0 #{$CFLAGS}"
-    $LDFLAGS = "-Wl,-rpath=#{inst}/lib -L#{inst}/lib #{$LDFLAGS}"
+    $LDFLAGS = "-Wl,-R#{inst}/lib -L#{inst}/lib #{$LDFLAGS}"
     have_library('lwes') && have_header('lwes.h') or
       abort "installation failed"
   end
