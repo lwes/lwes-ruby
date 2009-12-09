@@ -1,3 +1,8 @@
+Version 0.2.1 (erik-s-chang)
+  * Emitter#<< for structs
+  * fix full installs OSX
+  * check arguments for invalid structs due to code errors
+
 Version 0.1.2 (erik-s-chang)
   * TypeDB.new raises ArgumentError on non-String args
   * extra test for empty Event definitions (MetaEventInfo-only)
