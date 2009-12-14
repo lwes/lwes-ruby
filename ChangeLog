@@ -1,3 +1,6 @@
+Version 0.2.2 (erik-s-chang)
+  * fix handling of :iface for LWES::Emitter.new
+
 Version 0.2.1 (erik-s-chang)
   * Emitter#<< for structs
   * fix full installs OSX

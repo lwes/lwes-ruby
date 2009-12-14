@@ -11,6 +11,11 @@ class TestEmitter < Test::Unit::TestCase
     @options = LISTENER_DEFAULTS.dup
   end
 
+  def test_nil_iface
+    @options.delete(:iface)
+    assert_instance_of LWES::Emitter, LWES::Emitter.new(@options)
+  end
+
   def test_initialize
     assert_instance_of LWES::Emitter, LWES::Emitter.new(@options)
   end

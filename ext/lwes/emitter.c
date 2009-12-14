@@ -338,9 +338,16 @@ static VALUE _create(VALUE self, VALUE options)
 	_address = RSTRING_PTR(address);
 
 	iface = rb_hash_aref(options, ID2SYM(rb_intern("iface")));
-	if (TYPE(iface) != T_STRING)
-		rb_raise(rb_eTypeError, ":iface must be a string");
-	_iface = RSTRING_PTR(address);
+	switch (TYPE(iface)) {
+	case T_NIL:
+		_iface = NULL;
+		break;
+	case T_STRING:
+		_iface = RSTRING_PTR(iface);
+		break;
+	default:
+		rb_raise(rb_eTypeError, ":iface must be a String or nil");
+	}
 
 	port = rb_hash_aref(options, ID2SYM(rb_intern("port")));
 	if (TYPE(port) != T_FIXNUM)
