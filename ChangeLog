@@ -1,3 +1,6 @@
+Version 0.2.3 (erik-s-chang)
+  * hopefully fix installation/build problems under OSX
+
 Version 0.2.2 (erik-s-chang)
   * fix handling of :iface for LWES::Emitter.new
 
