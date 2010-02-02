@@ -14,6 +14,11 @@ unless defined?(LISTENER_DEFAULTS)
   }
 end
 
+private_bin = "ext/lwes/.inst/bin"
+if test ?d, private_bin
+  ENV['PATH'] = "#{private_bin}:#{ENV['PATH']}"
+end
+
 def lwes_listener(&block)
   cmd = "lwes-event-printing-listener" \
         " -m #{@options[:address]}" \

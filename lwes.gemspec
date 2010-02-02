@@ -42,4 +42,5 @@ test/unit/test_emitter.rb
 test/unit/test_struct.rb
 test/unit/test_type_db.rb
 )
+  s.test_files = s.files.grep(%r{\Atest/unit/test_})
 end
