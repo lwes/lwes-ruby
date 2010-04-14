@@ -6,6 +6,7 @@ dir_config('lwes')
 pwd = File.expand_path(File.dirname(__FILE__))
 v = '0.22.3'
 dir = "lwes-#{v}"
+diff = "#{pwd}/#{dir}.diff"
 inst = "#{pwd}/.inst"
 tgz = "#{dir}.tar.gz"
 url = "http://sourceforge.net/projects/lwes/files/lwes-c/#{v}/#{tgz}/download"
@@ -37,6 +38,7 @@ unless have_library('lwes') && have_header('lwes.h')
       FileUtils.rm_rf(dir)
       system('tar', 'zxf', tgz) or abort "tar failed with #{$?}"
       Dir.chdir(dir) do
+        system("patch", "-p1", "-i", diff) or abort "patch failed: #{$?}"
         args = %w(--disable-shared
                   --disable-hardcore
                   --with-pic
