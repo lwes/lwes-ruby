@@ -29,6 +29,25 @@ static void rle_free(void *ptr)
 	xfree(ptr);
 }
 
+static struct lwes_event *
+lwesrb_event_create(struct lwes_event_type_db *db, VALUE name)
+{
+	int gc_retry = 1;
+	const char *event_name = RSTRING_PTR(name);
+	struct lwes_event *event;
+
+retry:
+	event = lwes_event_create(db, event_name);
+	if (!event) {
+		if (--gc_retry == 0) {
+			rb_gc();
+			goto retry;
+		}
+		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
+	}
+	return event;
+}
+
 /* called by the GC when object is allocated */
 static VALUE rle_alloc(VALUE klass)
 {
@@ -49,18 +68,20 @@ static VALUE rle_alloc(VALUE klass)
 static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 {
 	VALUE *tmp;
-	VALUE v;
+	VALUE val;
 	struct lwes_event *event = (struct lwes_event *)memo;
 	LWES_CONST_SHORT_STRING name;
 	int rv = 0;
+	int gc_retry = 1;
 
 	assert(TYPE(kv) == T_ARRAY &&
 	       "hash iteration not giving key-value pairs");
 	tmp = RARRAY_PTR(kv);
 	name = RSTRING_PTR(rb_obj_as_string(tmp[0]));
+	val = tmp[1];
 
-	v = tmp[1];
-	switch (TYPE(v)) {
+retry:
+	switch (TYPE(val)) {
 	case T_TRUE:
 		rv = lwes_event_set_BOOLEAN(event, name, TRUE);
 		break;
@@ -68,20 +89,26 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 		rv = lwes_event_set_BOOLEAN(event, name, FALSE);
 		break;
 	case T_ARRAY:
-		rv = lwesrb_event_set_numeric(event, name, v);
+		rv = lwesrb_event_set_numeric(event, name, val);
 		break;
 	case T_STRING:
-		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(v));
+		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(val));
 		break;
 	}
-	if (rv > 0)
+	if (rv > 0) {
 		return Qnil;
-	if (rv == 0)
+	} else if (rv == 0) {
 		rb_raise(rb_eArgError, "unhandled type %s=%s for event=%s",
-	                 name, RSTRING_PTR(rb_inspect(v)), event->eventName);
-	/* rv < 0 */
-	rb_raise(rb_eRuntimeError, "failed to set %s=%s for event=%s",
-		 name, RSTRING_PTR(rb_inspect(v)), event->eventName);
+	                 name, RSTRING_PTR(rb_inspect(val)), event->eventName);
+	} else {
+		/* looking at the lwes source code, -3 is allocation errors */
+		if (rv == -3 && --gc_retry == 0) {
+			rb_gc();
+			goto retry;
+		}
+		rb_raise(rb_eRuntimeError, "failed to set %s=%s for event=%s",
+			 name, RSTRING_PTR(rb_inspect(val)), event->eventName);
+	}
 	return Qfalse;
 }
 
@@ -99,31 +126,50 @@ static VALUE _emit_hash(VALUE _tmp)
 	return _event;
 }
 
-static int set_field(
+static void
+set_field(
 	struct lwes_event *event,
 	LWES_CONST_SHORT_STRING name,
 	LWES_TYPE type,
 	VALUE val)
 {
+	int gc_retry = 1;
+	int rv;
+
+retry:
 	switch (type) {
 	case LWES_TYPE_BOOLEAN:
 		if (val == Qfalse)
-			return lwes_event_set_BOOLEAN(event, name, FALSE);
+			rv = lwes_event_set_BOOLEAN(event, name, FALSE);
 		else if (val == Qtrue)
-			return lwes_event_set_BOOLEAN(event, name, TRUE);
+			rv = lwes_event_set_BOOLEAN(event, name, TRUE);
 		else
 			rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
 			         name, RSTRING_PTR(rb_inspect(val)));
+		break;
 	case LWES_TYPE_STRING:
 		if (TYPE(val) != T_STRING)
 			rb_raise(rb_eTypeError, "non-String set for %s: %s",
 			         name, RSTRING_PTR(rb_inspect(val)));
-		return lwes_event_set_STRING(event, name, RSTRING_PTR(val));
+		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(val));
+		break;
 	default:
-		return lwesrb_event_set_num(event, name, type, val);
+		rv = lwesrb_event_set_num(event, name, type, val);
 	}
+	if (rv > 0) {
+		return;
+	} else {
+		if (rv == -3 && --gc_retry == 0) {
+			rb_gc();
+			goto retry;
+		}
+		rb_raise(rb_eRuntimeError,
+			 "failed to set %s=%s for event=%s (error: %d)",
+			 name, RSTRING_PTR(rb_inspect(val)),
+			 event->eventName, rv);
+	}
+
 	assert(0 && "you should never get here (set_field)");
-	return -1;
 }
 
 static VALUE _emit_struct(VALUE _argv)
@@ -144,7 +190,6 @@ static VALUE _emit_struct(VALUE _argv)
 		/* inner: [ :field_sym, "field_name", type ] */
 		VALUE *inner = RARRAY_PTR(*tmp);
 		VALUE val = rb_struct_aref(_event, inner[0]);
-		int rv;
 		LWES_CONST_SHORT_STRING name;
 		LWES_TYPE type;
 
@@ -153,14 +198,7 @@ static VALUE _emit_struct(VALUE _argv)
 
 		name = RSTRING_PTR(inner[1]);
 		type = NUM2INT(inner[2]);
-		rv = set_field(event, name, type, val);
-		if (rv > 0)
-			continue;
-
-		rb_raise(rb_eRuntimeError,
-		         "failed to set %s=%s for event=%s (error: %d)",
-		         name, RSTRING_PTR(rb_inspect(val)),
-			 event->eventName, rv);
+		set_field(event, name, type, val);
 	}
 
 	if (lwes_emitter_emit(_rle(self)->emitter, event) < 0)
@@ -182,10 +220,7 @@ static VALUE _destroy_event(VALUE _event)
 static VALUE emit_hash(VALUE self, VALUE name, VALUE _event)
 {
 	VALUE tmp[3];
-	struct lwes_event *event = lwes_event_create(NULL, RSTRING_PTR(name));
-
-	if (!event)
-		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
+	struct lwes_event *event = lwesrb_event_create(NULL, name);
 
 	tmp[0] = self;
 	tmp[1] = _event;
@@ -219,9 +254,7 @@ static VALUE emit_struct(VALUE self, VALUE _event)
 		         "could not get class NAME or TYPE_LIST from: %s",
 		         RSTRING_PTR(rb_inspect(_event)));
 
-	event = lwes_event_create(db, RSTRING_PTR(name));
-	if (!event)
-		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
+	event = lwesrb_event_create(db, name);
 
 	argv[0] = self;
 	argv[1] = _event;
@@ -330,6 +363,7 @@ static VALUE _create(VALUE self, VALUE options)
 	LWES_BOOLEAN _emit_heartbeat = FALSE;
 	LWES_INT_16 _freq = 0;
 	LWES_U_INT_32 _ttl = UINT32_MAX; /* nobody sets a ttl this long, right? */
+	int gc_retry = 1;
 
 	if (rle->emitter)
 		rb_raise(rb_eRuntimeError, "already created lwes_emitter");
@@ -379,6 +413,7 @@ static VALUE _create(VALUE self, VALUE options)
 	} else
 		rb_raise(rb_eTypeError, ":ttl must be a Fixnum or nil");
 
+retry:
 	if (_ttl == UINT32_MAX)
 		rle->emitter = lwes_emitter_create(
 		         _address, _iface, _port, _emit_heartbeat, _freq);
@@ -386,8 +421,13 @@ static VALUE _create(VALUE self, VALUE options)
 		rle->emitter = lwes_emitter_create_with_ttl(
 		         _address, _iface, _port, _emit_heartbeat, _freq, _ttl);
 
-	if (!rle->emitter)
+	if (!rle->emitter) {
+		if (--gc_retry == 0) {
+			rb_gc();
+			goto retry;
+		}
 		rb_raise(rb_eRuntimeError, "failed to create LWES emitter");
+	}
 
 	return self;
 }
