@@ -26,7 +26,7 @@ static void rle_free(void *ptr)
 
 	if (rle->emitter)
 		lwes_emitter_destroy(rle->emitter);
-	rle->emitter = NULL;
+	xfree(ptr);
 }
 
 /* called by the GC when object is allocated */
@@ -311,7 +311,11 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
  */
 static VALUE emitter_close(VALUE self)
 {
-	rle_free(_rle(self));
+	struct _rb_lwes_emitter *rle = _rle(self);
+
+	if (rle->emitter)
+		lwes_emitter_destroy(rle->emitter);
+	rle->emitter = NULL;
 
 	return Qnil;
 }

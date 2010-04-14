@@ -12,7 +12,7 @@ static void tdb_free(void *ptr)
 
 	if (tdb->db)
 		lwes_event_type_db_destroy(tdb->db);
-	tdb->db = NULL;
+	xfree(ptr);
 }
 
 static VALUE tdb_alloc(VALUE klass)
