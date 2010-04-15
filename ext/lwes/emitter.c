@@ -7,6 +7,12 @@ static ID id_new;
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
 	struct lwes_emitter *emitter;
+	LWES_CONST_SHORT_STRING address;
+	LWES_CONST_SHORT_STRING iface;
+	LWES_U_INT_32 port;
+	LWES_BOOLEAN emit_heartbeat;
+	LWES_INT_16 freq;
+	LWES_U_INT_32 ttl;
 };
 
 /* gets the _rb_lwes_emitter struct pointer from self */
@@ -353,17 +359,37 @@ static VALUE emitter_close(VALUE self)
 	return Qnil;
 }
 
+static void lwesrb_emitter_create(struct _rb_lwes_emitter *rle)
+{
+	int gc_retry = 1;
+retry:
+	if (rle->ttl == UINT32_MAX)
+		rle->emitter = lwes_emitter_create(
+		         rle->address, rle->iface, rle->port,
+			 rle->emit_heartbeat, rle->freq);
+	else
+		rle->emitter = lwes_emitter_create_with_ttl(
+		         rle->address, rle->iface, rle->port,
+			 rle->emit_heartbeat, rle->freq, rle->ttl);
+
+	if (!rle->emitter) {
+		if (--gc_retry == 0) {
+			rb_gc();
+			goto retry;
+		}
+		rb_raise(rb_eRuntimeError, "failed to create LWES emitter");
+	}
+}
+
 /* should only used internally by #initialize */
 static VALUE _create(VALUE self, VALUE options)
 {
 	struct _rb_lwes_emitter *rle = _rle(self);
 	VALUE address, iface, port, heartbeat, ttl;
-	LWES_CONST_SHORT_STRING _address, _iface;
-	LWES_U_INT_32 _port; /* odd, uint16 would be enough here */
-	LWES_BOOLEAN _emit_heartbeat = FALSE;
-	LWES_INT_16 _freq = 0;
-	LWES_U_INT_32 _ttl = UINT32_MAX; /* nobody sets a ttl this long, right? */
-	int gc_retry = 1;
+
+	rle->emit_heartbeat = FALSE;
+	rle->freq = 0;
+	rle->ttl = UINT32_MAX; /* nobody sets a ttl this long, right? */
 
 	if (rle->emitter)
 		rb_raise(rb_eRuntimeError, "already created lwes_emitter");
@@ -373,15 +399,15 @@ static VALUE _create(VALUE self, VALUE options)
 	address = rb_hash_aref(options, ID2SYM(rb_intern("address")));
 	if (TYPE(address) != T_STRING)
 		rb_raise(rb_eTypeError, ":address must be a string");
-	_address = RSTRING_PTR(address);
+	rle->address = RSTRING_PTR(address);
 
 	iface = rb_hash_aref(options, ID2SYM(rb_intern("iface")));
 	switch (TYPE(iface)) {
 	case T_NIL:
-		_iface = NULL;
+		rle->iface = NULL;
 		break;
 	case T_STRING:
-		_iface = RSTRING_PTR(iface);
+		rle->iface = RSTRING_PTR(iface);
 		break;
 	default:
 		rb_raise(rb_eTypeError, ":iface must be a String or nil");
@@ -390,15 +416,15 @@ static VALUE _create(VALUE self, VALUE options)
 	port = rb_hash_aref(options, ID2SYM(rb_intern("port")));
 	if (TYPE(port) != T_FIXNUM)
 		rb_raise(rb_eTypeError, ":port must be a Fixnum");
-	_port = NUM2UINT(port);
+	rle->port = NUM2UINT(port);
 
 	heartbeat = rb_hash_aref(options, ID2SYM(rb_intern("heartbeat")));
 	if (TYPE(heartbeat) == T_FIXNUM) {
 		int tmp = NUM2INT(heartbeat);
 		if (tmp > INT16_MAX)
 			rb_raise(rb_eArgError,":heartbeat > INT16_MAX seconds");
-		_emit_heartbeat = TRUE;
-		_freq = (LWES_INT_16)tmp;
+		rle->emit_heartbeat = TRUE;
+		rle->freq = (LWES_INT_16)tmp;
 	} else if (NIL_P(heartbeat)) { /* do nothing, use defaults */
 	} else
 		rb_raise(rb_eTypeError, ":heartbeat must be a Fixnum or nil");
@@ -408,26 +434,12 @@ static VALUE _create(VALUE self, VALUE options)
 		unsigned LONG_LONG tmp = NUM2ULL(ttl);
 		if (tmp >= UINT32_MAX)
 			rb_raise(rb_eArgError, ":ttl >= UINT32_MAX seconds");
-		_ttl = (LWES_U_INT_32)tmp;
+		rle->ttl = (LWES_U_INT_32)tmp;
 	} else if (NIL_P(ttl)) { /* do nothing, no ttl */
 	} else
 		rb_raise(rb_eTypeError, ":ttl must be a Fixnum or nil");
 
-retry:
-	if (_ttl == UINT32_MAX)
-		rle->emitter = lwes_emitter_create(
-		         _address, _iface, _port, _emit_heartbeat, _freq);
-	else
-		rle->emitter = lwes_emitter_create_with_ttl(
-		         _address, _iface, _port, _emit_heartbeat, _freq, _ttl);
-
-	if (!rle->emitter) {
-		if (--gc_retry == 0) {
-			rb_gc();
-			goto retry;
-		}
-		rb_raise(rb_eRuntimeError, "failed to create LWES emitter");
-	}
+	lwesrb_emitter_create(rle);
 
 	return self;
 }
