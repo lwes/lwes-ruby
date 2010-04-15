@@ -1,3 +1,10 @@
+Version unreleased (erik-s-chang)
+  * attempt allocation failure handling by invoking Ruby GC
+  * corner-case fixes for copying TypeDB and Emitter objects
+  * for folks without LWES libraries separately installed:
+    - backport ESF error handling fix (r344)
+    - backport empty events in ESFs fix (inherited fields only) (r307)
+
 Version 0.2.3 (erik-s-chang)
   * hopefully fix installation/build problems under OSX
 
