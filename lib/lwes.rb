@@ -1,6 +1,6 @@
 module LWES
-  # version of our library, currently 0.3.0
-  VERSION = "0.3.0"
+  # version of our library, currently 0.3.1
+  VERSION = "0.3.1"
 
   autoload :TypeDB, "lwes/type_db"
   autoload :Struct, "lwes/struct"

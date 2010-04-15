@@ -1,3 +1,6 @@
+Version 0.3.1 (erik-s-chang)
+  * fix tests and enable Ruby warnings for tests
+
 Version 0.3.0 (erik-s-chang)
   * attempt memory allocation failure handling by invoking Ruby GC
   * corner-case fixes for copying TypeDB and Emitter objects
