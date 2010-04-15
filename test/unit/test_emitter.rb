@@ -20,6 +20,20 @@ class TestEmitter < Test::Unit::TestCase
     assert_instance_of LWES::Emitter, LWES::Emitter.new(@options)
   end
 
+  def test_dup
+    orig = LWES::Emitter.new(@options)
+    duped = orig.dup
+    assert_instance_of LWES::Emitter, duped
+    assert duped.object_id != orig.object_id
+  end
+
+  def test_clone
+    orig = LWES::Emitter.new(@options)
+    cloned = orig.clone
+    assert_instance_of LWES::Emitter, cloned
+    assert cloned.object_id != orig.object_id
+  end
+
   def test_initialize_with_heartbeat
     heartbeat = @options.merge(:heartbeat => 30)
     assert_instance_of LWES::Emitter, LWES::Emitter.new(heartbeat)

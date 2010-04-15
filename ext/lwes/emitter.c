@@ -381,6 +381,21 @@ retry:
 	}
 }
 
+/* :nodoc: */
+static VALUE init_copy(VALUE dest, VALUE obj)
+{
+	struct _rb_lwes_emitter *dst = _rle(dest);
+	struct _rb_lwes_emitter *src = _rle(obj);
+
+	memcpy(dst, src, sizeof(*dst));
+	lwesrb_emitter_create(dst);
+
+	assert(dst->emitter && dst->emitter != src->emitter &&
+	       "emitter not a copy");
+
+	return dest;
+}
+
 /* should only used internally by #initialize */
 static VALUE _create(VALUE self, VALUE options)
 {
@@ -454,6 +469,7 @@ void lwesrb_init_emitter(void)
 	rb_define_method(cLWES_Emitter, "emit", emitter_emit, -1);
 	rb_define_method(cLWES_Emitter, "_create", _create, 1);
 	rb_define_method(cLWES_Emitter, "close", emitter_close, 0);
+	rb_define_method(cLWES_Emitter, "initialize_copy", init_copy, 1);
 	rb_define_alloc_func(cLWES_Emitter, rle_alloc);
 	LWESRB_MKID(TYPE_DB);
 	LWESRB_MKID(TYPE_LIST);
