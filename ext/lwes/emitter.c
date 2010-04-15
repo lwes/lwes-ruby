@@ -310,7 +310,7 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 	case T_STRING:
 		if (TYPE(event) == T_HASH)
 			return emit_hash(self, name, event);
-		rb_raise(rb_eArgError,
+		rb_raise(rb_eTypeError,
 		         "second argument must be a hash when first "
 		         "is a String");
 	case T_STRUCT:

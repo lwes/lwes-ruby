@@ -109,7 +109,7 @@ class TestEmitter < Test::Unit::TestCase
     assert_equal 1, lines.grep(/\bip = 192.168.1.1/).size
   end
 
-  def test_emit_invalid
+  def test_emit_junk
     emitter = LWES::Emitter.new(@options)
     assert_raises(ArgumentError) { emitter.emit("JUNK", :junk => %r{junk}) }
   end

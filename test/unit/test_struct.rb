@@ -63,10 +63,10 @@ class TestStruct < Test::Unit::TestCase
     }
   end
 
-  def test_new_with_defaults
+  def test_new_with_type_db
     type_db = LWES::TypeDB.new(ESF_FILE)
     assert type_db.instance_of?(LWES::TypeDB)
-    a = LWES::Struct.new(:db=>type_db, :class => :TypeDB_Event)
+    a = LWES::Struct.new(:db=>type_db, :class=>:TypeDB_Event, :name=>:Event1)
     assert a.instance_of?(Class)
     assert_equal "TypeDB_Event", a.name
     assert a.const_get(:TYPE_DB).instance_of?(LWES::TypeDB)
@@ -78,7 +78,7 @@ class TestStruct < Test::Unit::TestCase
     assert_kind_of(::Struct, y)
   end
 
-  def test_new_with_defaults
+  def test_new_with_defaults_hash
     a = LWES::Struct.new(:file=>ESF_FILE)
     assert a.instance_of?(Class)
     assert_equal "Event1", a.name
@@ -165,15 +165,15 @@ class TestStruct < Test::Unit::TestCase
                          :class=> :LWES_New,
                          :name=>:Event1)
     y = LWES_Foo.new(true, -16, -32, -64, "127.0.0.1", "HI", 16, 32, 64)
-    assert_equal true, y.t_bool
-    assert_equal -16, y.t_int16
-    assert_equal -32, y.t_int32
-    assert_equal -64, y.t_int64
-    assert_equal "127.0.0.1", y.t_ip_addr
-    assert_equal "HI", y.t_string
-    assert_equal 16, y.t_uint16
-    assert_equal 32, y.t_uint32
-    assert_equal 64, y.t_uint64
+    assert_equal(true, y.t_bool)
+    assert_equal(-16, y.t_int16)
+    assert_equal(-32, y.t_int32)
+    assert_equal(-64, y.t_int64)
+    assert_equal("127.0.0.1", y.t_ip_addr)
+    assert_equal("HI", y.t_string)
+    assert_equal(16, y.t_uint16)
+    assert_equal(32, y.t_uint32)
+    assert_equal(64, y.t_uint64)
   end
 
   def test_skip_attr

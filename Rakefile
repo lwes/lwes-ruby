@@ -7,6 +7,7 @@ desc "run unit tests"
 Rake::TestTask.new('test:unit') do |t|
   t.libs << "ext/lwes"
   t.test_files = FileList['test/unit/test_*.rb']
+  t.warning = true
   t.verbose = true if ENV["VERBOSE"].to_i > 0
 end
 
