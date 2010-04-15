@@ -21,5 +21,15 @@ module LWES
       end
     end
 
+    # :stopdoc:
+    # avoid GC mis-free-ing nuked objects
+    def dup
+      self
+    end
+
+    def clone
+      self
+    end
+
   end
 end
