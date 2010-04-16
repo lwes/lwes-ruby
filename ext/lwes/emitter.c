@@ -4,11 +4,21 @@ static VALUE cLWES_Emitter;
 static ID id_TYPE_DB, id_TYPE_LIST, id_NAME;
 static ID id_new;
 
+static char *my_strdup(const char *str)
+{
+	long len = strlen(str) + 1;
+	char *rv = xmalloc(len);
+
+	memcpy(rv, str, len);
+
+	return rv;
+}
+
 /* the underlying struct for LWES::Emitter */
 struct _rb_lwes_emitter {
 	struct lwes_emitter *emitter;
-	LWES_CONST_SHORT_STRING address;
-	LWES_CONST_SHORT_STRING iface;
+	char *address;
+	char *iface;
 	LWES_U_INT_32 port;
 	LWES_BOOLEAN emit_heartbeat;
 	LWES_INT_16 freq;
@@ -32,6 +42,8 @@ static void rle_free(void *ptr)
 
 	if (rle->emitter)
 		lwes_emitter_destroy(rle->emitter);
+	xfree(rle->address);
+	xfree(rle->iface);
 	xfree(ptr);
 }
 
@@ -388,6 +400,9 @@ static VALUE init_copy(VALUE dest, VALUE obj)
 	struct _rb_lwes_emitter *src = _rle(obj);
 
 	memcpy(dst, src, sizeof(*dst));
+	dst->address = my_strdup(src->address);
+	if (dst->iface)
+		dst->iface = my_strdup(src->iface);
 	lwesrb_emitter_create(dst);
 
 	assert(dst->emitter && dst->emitter != src->emitter &&
@@ -414,7 +429,7 @@ static VALUE _create(VALUE self, VALUE options)
 	address = rb_hash_aref(options, ID2SYM(rb_intern("address")));
 	if (TYPE(address) != T_STRING)
 		rb_raise(rb_eTypeError, ":address must be a string");
-	rle->address = RSTRING_PTR(address);
+	rle->address = my_strdup(RSTRING_PTR(address));
 
 	iface = rb_hash_aref(options, ID2SYM(rb_intern("iface")));
 	switch (TYPE(iface)) {
@@ -422,7 +437,7 @@ static VALUE _create(VALUE self, VALUE options)
 		rle->iface = NULL;
 		break;
 	case T_STRING:
-		rle->iface = RSTRING_PTR(iface);
+		rle->iface = my_strdup(RSTRING_PTR(iface));
 		break;
 	default:
 		rb_raise(rb_eTypeError, ":iface must be a String or nil");
