@@ -1,6 +1,5 @@
 #include "lwes_ruby.h"
 
-static VALUE cLWES_Emitter;
 static ID id_TYPE_DB, id_TYPE_LIST, id_NAME;
 static ID id_new;
 
@@ -478,7 +477,8 @@ static VALUE _create(VALUE self, VALUE options)
 void lwesrb_init_emitter(void)
 {
 	VALUE mLWES = rb_define_module("LWES");
-	cLWES_Emitter = rb_define_class_under(mLWES, "Emitter", rb_cObject);
+	VALUE cLWES_Emitter =
+	                  rb_define_class_under(mLWES, "Emitter", rb_cObject);
 
 	rb_define_method(cLWES_Emitter, "<<", emitter_ltlt, 1);
 	rb_define_method(cLWES_Emitter, "emit", emitter_emit, -1);

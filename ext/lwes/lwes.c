@@ -1,11 +1,9 @@
 #include "lwes_ruby.h"
 
-static VALUE mLWES;
-
 /* initialize the extension, Ruby automatically picks this up */
 void Init_lwes_ext(void)
 {
-	mLWES = rb_define_module("LWES");
+	VALUE mLWES = rb_define_module("LWES");
 
 	#define LWES_TYPE_CONST(name) \
 	   rb_define_const(mLWES, #name, INT2FIX(LWES_TYPE_##name))
