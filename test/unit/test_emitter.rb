@@ -180,6 +180,38 @@ class TestEmitter < Test::Unit::TestCase
     }
   end
 
+  def test_emit_enc_sym
+    emitter = LWES::Emitter.new(@options)
+    tmp = {
+      :enc => 1,
+      :a => "b",
+      :c => "d",
+    }
+    out = lwes_listener do
+      assert_nothing_raised { emitter.emit("EncTest", tmp) }
+    end
+    lines = out.readlines
+    assert_equal 1, lines.grep(/\A\tenc = 1;\n\z/).size
+    assert_equal 1, lines.grep(/\A\ta = b;\n\z/).size
+    assert_equal 1, lines.grep(/\A\tc = d;\n\z/).size
+  end
+
+  def test_emit_enc_str
+    emitter = LWES::Emitter.new(@options)
+    tmp = {
+      :enc => 1,
+      :a => "b",
+      :c => "d",
+    }
+    out = lwes_listener do
+      assert_nothing_raised { emitter.emit("EncTest", tmp) }
+    end
+    lines = out.readlines
+    assert_equal 1, lines.grep(/\A\tenc = 1;\n\z/).size
+    assert_equal 1, lines.grep(/\A\ta = b;\n\z/).size
+    assert_equal 1, lines.grep(/\A\tc = d;\n\z/).size
+  end
+
   def test_close
     emitter = LWES::Emitter.new(@options)
     assert_nil emitter.close

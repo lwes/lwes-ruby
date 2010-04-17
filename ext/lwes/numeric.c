@@ -7,8 +7,14 @@ static ID
   sym_int64, sym_uint64,
   sym_ip_addr;
 
-static int set_uint16(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off)
+{
+	if (marshall_BYTE(type, buf, MAX_MSG_SIZE, off) > 0)
+		return;
+	rb_raise(rb_eRuntimeError, "failed to dump type=%02x", (unsigned)type);
+}
+
+static int dump_uint16(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	int32_t tmp = NUM2INT(val);
 
@@ -17,24 +23,24 @@ static int set_uint16(
 	if (tmp > UINT16_MAX)
 		rb_raise(rb_eRangeError, ":uint16 too large: %d", tmp);
 
-	return lwes_event_set_U_INT_16(event, name, (LWES_U_INT_16)tmp);
+	lwesrb_dump_type(LWES_U_INT_16_TOKEN, buf, off);
+	return marshall_U_INT_16((LWES_U_INT_16)tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int set_int16(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+static int dump_int16(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	int tmp = NUM2INT(val);
+	int32_t tmp = NUM2INT(val);
 
 	if (tmp > INT16_MAX)
 		rb_raise(rb_eRangeError, ":int16 too large: %i", tmp);
 	if (tmp < INT16_MIN)
 		rb_raise(rb_eRangeError, ":int16 too small: %i", tmp);
 
-	return lwes_event_set_INT_16(event, name, (LWES_INT_16)tmp);
+	lwesrb_dump_type(LWES_INT_16_TOKEN, buf, off);
+	return marshall_INT_16((LWES_INT_16)tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int set_uint32(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+static int dump_uint32(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	LONG_LONG tmp = NUM2LL(val);
 
@@ -43,11 +49,11 @@ static int set_uint32(
 	if (tmp > UINT32_MAX)
 		rb_raise(rb_eRangeError, ":uint32 too large: %lli", tmp);
 
-	return lwes_event_set_U_INT_32(event, name, (LWES_U_INT_32)tmp);
+	lwesrb_dump_type(LWES_U_INT_32_TOKEN, buf, off);
+	return marshall_U_INT_32((LWES_U_INT_32)tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int set_int32(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+static int dump_int32(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	LONG_LONG tmp = NUM2LL(val);
 
@@ -56,11 +62,11 @@ static int set_int32(
 	if (tmp < INT32_MIN)
 		rb_raise(rb_eRangeError, ":int32 too small: %lli", tmp);
 
-	return lwes_event_set_INT_32(event, name, (LWES_INT_32)tmp);
+	lwesrb_dump_type(LWES_INT_32_TOKEN, buf, off);
+	return marshall_INT_32((LWES_INT_32)tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int set_uint64(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+static int dump_uint64(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	unsigned LONG_LONG tmp = NUM2ULL(val); /* can raise RangeError */
 	ID type = TYPE(val);
@@ -70,52 +76,45 @@ static int set_uint64(
 		rb_raise(rb_eRangeError, ":uint64 negative: %s",
 		         RSTRING_PTR(rb_inspect(val)));
 
-	return lwes_event_set_U_INT_64(event, name, (LWES_U_INT_64)tmp);
+	lwesrb_dump_type(LWES_U_INT_64_TOKEN, buf, off);
+	return marshall_U_INT_64((LWES_U_INT_64)tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int set_int64(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+static int dump_int64(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	LONG_LONG tmp = NUM2LL(val); /* can raise RangeError */
 
-	return lwes_event_set_INT_64(event, name, (LWES_INT_64)tmp);
+	lwesrb_dump_type(LWES_INT_64_TOKEN, buf, off);
+	return marshall_INT_64((LWES_INT_64)tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int set_ip_addr(
-	struct lwes_event *event, LWES_CONST_SHORT_STRING name, VALUE val)
+static int dump_ip_addr(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
+	LWES_IP_ADDR addr;
+
 	switch (TYPE(val)) {
 	case T_STRING:
-	{
-		LWES_CONST_SHORT_STRING addr = RSTRING_PTR(val);
-		return lwes_event_set_IP_ADDR_w_string(event, name, addr);
-	}
+		addr.s_addr = inet_addr(RSTRING_PTR(val));
+		break;
 	case T_FIXNUM:
 	case T_BIGNUM:
-	{
-		LWES_IP_ADDR *addr = ALLOC(LWES_IP_ADDR); /* never fails */
-		int rv;
-
-		addr->s_addr = htonl(NUM2UINT(val));
-		rv = lwes_event_set_IP_ADDR(event, name, *addr);
-
-		if (rv < 0)
-			xfree(addr);
-		return rv;
-	}
+		addr.s_addr = htonl(NUM2UINT(val));
+		break;
 	default:
 		rb_raise(rb_eTypeError,
 		         ":ip_addr address must be String or Integer: %s",
 		         RSTRING_PTR(rb_inspect(val)));
 	}
+	lwesrb_dump_type(LWES_IP_ADDR_TOKEN, buf, off);
+	return marshall_IP_ADDR(addr, buf, MAX_MSG_SIZE, off);
 }
 
 /* simple type => function dispatch map */
 static struct _type_fn_map {
 	ID type;
-	int (*fn)(struct lwes_event *, LWES_CONST_SHORT_STRING, VALUE);
+	int (*fn)(VALUE, LWES_BYTE_P, size_t *);
 } type_fn_map[] = {
-#define SYMFN(T) { (ID)&sym_##T, set_##T }
+#define SYMFN(T) { (ID)&sym_##T, dump_##T }
 	SYMFN(uint16),
 	SYMFN(int16),
 	SYMFN(uint32),
@@ -126,39 +125,46 @@ static struct _type_fn_map {
 #undef SYMFN
 };
 
-int lwesrb_event_set_num(
-	struct lwes_event *event,
-	LWES_CONST_SHORT_STRING name,
+/* used for Struct serialization where types are known ahead of time */
+static int dump_num(
 	LWES_TYPE type,
-	VALUE val)
+	VALUE val,
+	LWES_BYTE_P buf,
+	size_t *off)
 {
 	switch (type) {
-	case LWES_TYPE_U_INT_16: return set_uint16(event, name, val);
-	case LWES_TYPE_INT_16: return set_int16(event, name, val);
-	case LWES_TYPE_U_INT_32: return set_uint32(event, name, val);
-	case LWES_TYPE_INT_32: return set_int32(event, name, val);
-	case LWES_TYPE_U_INT_64: return set_uint64(event, name, val);
-	case LWES_TYPE_INT_64: return set_int64(event, name, val);
-	case LWES_TYPE_IP_ADDR: return set_ip_addr(event, name, val);
+	case LWES_TYPE_U_INT_16: return dump_uint16(val, buf, off);
+	case LWES_TYPE_INT_16: return dump_int16(val, buf, off);
+	case LWES_TYPE_U_INT_32: return dump_uint32(val, buf, off);
+	case LWES_TYPE_INT_32: return dump_int32(val, buf, off);
+	case LWES_TYPE_U_INT_64: return dump_uint64(val, buf, off);
+	case LWES_TYPE_INT_64: return dump_int64(val, buf, off);
+	case LWES_TYPE_IP_ADDR: return dump_ip_addr(val, buf, off);
 	default:
 		rb_raise(rb_eRuntimeError,
 			 "unknown LWES attribute type: 0x%02x", type);
 	}
-	assert("you should never get here (set_field)");
+	assert("you should never get here (dump_num)");
 	return -1;
 }
 
+void lwesrb_dump_num(LWES_BYTE type, VALUE val, LWES_BYTE_P buf, size_t *off)
+{
+	if (dump_num(type, val, buf, off) > 0)
+		return;
+	rb_raise(rb_eRuntimeError,
+	         "dumping numeric type 0x%02x, type failed", type);
+}
+
 /*
+ * used for Hash serialization
  * array contains two elements:
  *   [ symbolic_type, number ]
  * returns the return value of the underlying lwes_event_set_* call
  */
-int lwesrb_event_set_numeric(
-	struct lwes_event *event,
-	LWES_CONST_SHORT_STRING name,
-	VALUE array)
+void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 {
-	int i;
+	int i, rv;
 	struct _type_fn_map *head;
 	VALUE *ary;
 	ID type;
@@ -173,15 +179,19 @@ int lwesrb_event_set_numeric(
 
 	i = sizeof(type_fn_map) / sizeof(type_fn_map[0]);
 	for (head = type_fn_map; --i >= 0; head++) {
-		if (head->type == type)
-			return head->fn(event, name, ary[1]);
+		if (head->type != type)
+			continue;
+
+		rv = head->fn(ary[1], buf, off);
+		if (rv > 0)
+			return;
+		rb_raise(rb_eRuntimeError,
+			 "dumping numeric type %s, type failed",
+			 RSTRING_PTR(rb_obj_as_string(type)));
 	}
 
 	rb_raise(rb_eArgError,
-	         "unknown type: %s",
-	         RSTRING_PTR(rb_inspect(type)));
-
-	return -1;
+	         "unknown type: %s", RSTRING_PTR(rb_inspect(type)));
 }
 
 void lwesrb_init_numeric(void)

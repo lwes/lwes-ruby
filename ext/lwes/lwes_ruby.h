@@ -19,16 +19,11 @@ void lwesrb_init_emitter(void);
 
 void lwesrb_init_numeric(void);
 
-int lwesrb_event_set_numeric(
-	struct lwes_event *event,
-	LWES_CONST_SHORT_STRING name,
-	VALUE array);
+void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off);
 
-int lwesrb_event_set_num(
-	struct lwes_event *event,
-	LWES_CONST_SHORT_STRING name,
-	LWES_TYPE type,
-	VALUE val);
+void lwesrb_dump_num(LWES_BYTE type, VALUE val, LWES_BYTE_P buf, size_t *off);
+
+void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off);
 
 #ifndef RSTRING_PTR
 #  define RSTRING_PTR(s) (RSTRING(s)->ptr)
@@ -38,6 +33,11 @@ int lwesrb_event_set_num(
 #ifndef RARRAY_PTR
 #  define RARRAY_PTR(s) (RARRAY(s)->ptr)
 #  define RARRAY_LEN(s) (RARRAY(s)->len)
+#endif
+
+#ifndef RSTRUCT_PTR
+#  define RSTRUCT_PTR(s) (RSTRUCT(s)->ptr)
+#  define RSTRUCT_LEN(s) (RSTRUCT(s)->len)
 #endif
 
 #endif /* LWES_RUBY_H */

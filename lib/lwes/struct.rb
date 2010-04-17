@@ -97,6 +97,8 @@ module LWES
       event_def.each { |(field,type)| ed[field] = type }
       type_list = event_def.map { |(field,type)| [ field, field.to_s, type ] }
       tmp.const_set :TYPE_LIST, type_list
+      tmp.const_set :HAVE_ENCODING,
+                    type_list.include?([ :enc, 'enc', LWES::INT_16 ])
 
       defaults = options[:defaults] || {}
       defaults = tmp.const_set :DEFAULTS, defaults.dup

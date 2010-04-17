@@ -1,7 +1,50 @@
 #include "lwes_ruby.h"
 
-static ID id_TYPE_DB, id_TYPE_LIST, id_NAME;
-static ID id_new;
+static VALUE ENC; /* LWES_ENCODING */
+static ID id_TYPE_DB, id_TYPE_LIST, id_NAME, id_HAVE_ENCODING;
+static ID id_new, id_enc, id_size;
+static ID sym_enc;
+
+static void dump_name(VALUE name, LWES_BYTE_P buf, size_t *off)
+{
+	char *s = RSTRING_PTR(name);
+
+	if (marshall_SHORT_STRING(s, buf, MAX_MSG_SIZE, off) > 0)
+		return;
+	rb_raise(rb_eRuntimeError, "failed to dump name=%s", s);
+}
+
+static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
+{
+	LWES_BOOLEAN tmp = FALSE;
+
+	if (val == Qtrue) {
+		tmp = TRUE;
+	} else if (val != Qfalse) {
+		rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
+			 RSTRING_PTR(name),
+			 RSTRING_PTR(rb_inspect(val)));
+	}
+	dump_name(name, buf, off);
+	lwesrb_dump_type(LWES_BOOLEAN_TOKEN, buf, off);
+	return marshall_BOOLEAN(tmp, buf, MAX_MSG_SIZE, off);
+}
+
+static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
+{
+	if (TYPE(val) != T_STRING)
+		rb_raise(rb_eTypeError, "not a string: %s",
+		         RSTRING_PTR(rb_inspect(val)));
+	dump_name(name, buf, off);
+	lwesrb_dump_type(LWES_STRING_TOKEN, buf, off);
+	return marshall_LONG_STRING(RSTRING_PTR(val), buf, MAX_MSG_SIZE, off);
+}
+
+static void dump_enc(VALUE enc, LWES_BYTE_P buf, size_t *off)
+{
+	dump_name(ENC, buf, off);
+	lwesrb_dump_num(LWES_INT_16_TOKEN, enc, buf, off);
+}
 
 static char *my_strdup(const char *str)
 {
@@ -46,25 +89,6 @@ static void rle_free(void *ptr)
 	xfree(ptr);
 }
 
-static struct lwes_event *
-lwesrb_event_create(struct lwes_event_type_db *db, VALUE name)
-{
-	int gc_retry = 1;
-	const char *event_name = RSTRING_PTR(name);
-	struct lwes_event *event;
-
-retry:
-	event = lwes_event_create(db, event_name);
-	if (!event) {
-		if (--gc_retry == 0) {
-			rb_gc();
-			goto retry;
-		}
-		rb_raise(rb_eRuntimeError, "failed to create lwes_event");
-	}
-	return event;
-}
-
 /* called by the GC when object is allocated */
 static VALUE rle_alloc(VALUE klass)
 {
@@ -84,202 +108,206 @@ static VALUE rle_alloc(VALUE klass)
  */
 static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 {
-	VALUE *tmp;
+	VALUE *tmp = (VALUE *)memo;
 	VALUE val;
-	struct lwes_event *event = (struct lwes_event *)memo;
-	LWES_CONST_SHORT_STRING name;
+	VALUE name;
 	int rv = 0;
-	int gc_retry = 1;
+	LWES_BYTE_P buf = (LWES_BYTE_P)tmp[0];
+	size_t *off = (size_t *)tmp[1];
 
-	assert(TYPE(kv) == T_ARRAY &&
-	       "hash iteration not giving key-value pairs");
+	if (TYPE(kv) != T_ARRAY || RARRAY_LEN(kv) != 2)
+		rb_raise(rb_eTypeError,
+		         "hash iteration not giving key-value pairs");
 	tmp = RARRAY_PTR(kv);
-	name = RSTRING_PTR(rb_obj_as_string(tmp[0]));
+	name = tmp[0];
+
+	if (name == sym_enc) return Qnil; /* already dumped first */
+
+	name = rb_obj_as_string(name);
+
+	if (strcmp(RSTRING_PTR(name), LWES_ENCODING) == 0)
+		return Qnil;
+
 	val = tmp[1];
 
-retry:
 	switch (TYPE(val)) {
 	case T_TRUE:
-		rv = lwes_event_set_BOOLEAN(event, name, TRUE);
-		break;
 	case T_FALSE:
-		rv = lwes_event_set_BOOLEAN(event, name, FALSE);
+		rv = dump_bool(name, val, buf, off);
 		break;
 	case T_ARRAY:
-		rv = lwesrb_event_set_numeric(event, name, val);
-		break;
-	case T_STRING:
-		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(val));
-		break;
-	}
-	if (rv > 0) {
+		dump_name(name, buf, off);
+		lwesrb_dump_num_ary(val, buf, off);
 		return Qnil;
-	} else if (rv == 0) {
-		rb_raise(rb_eArgError, "unhandled type %s=%s for event=%s",
-	                 name, RSTRING_PTR(rb_inspect(val)), event->eventName);
-	} else {
-		/* looking at the lwes source code, -3 is allocation errors */
-		if (rv == -3 && --gc_retry == 0) {
-			rb_gc();
-			goto retry;
-		}
-		rb_raise(rb_eRuntimeError, "failed to set %s=%s for event=%s",
-			 name, RSTRING_PTR(rb_inspect(val)), event->eventName);
+	case T_STRING:
+		rv = dump_string(name, val, buf, off);
+		break;
 	}
+
+	if (rv > 0)
+		return Qnil;
+
+	rb_raise(rb_eArgError, "unhandled type %s=%s",
+		 RSTRING_PTR(name), RSTRING_PTR(rb_inspect(val)));
 	return Qfalse;
 }
 
-static VALUE _emit_hash(VALUE _tmp)
+static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 {
-	VALUE *tmp = (VALUE *)_tmp;
-	VALUE self = tmp[0];
-	VALUE _event = tmp[1];
-	struct lwes_event *event = (struct lwes_event *)tmp[2];
+	struct _rb_lwes_emitter *rle = _rle(self);
+	LWES_BYTE_P buf = rle->emitter->buffer;
+	VALUE tmp[2];
+	size_t off = 0;
+	VALUE enc;
+	int size = NUM2INT(rb_funcall(event, id_size, 0, 0));
+	int rv;
 
-	rb_iterate(rb_each, _event, event_hash_iter_i, (VALUE)event);
-	if (lwes_emitter_emit(_rle(self)->emitter, event) < 0)
+	tmp[0] = (VALUE)buf;
+	tmp[1] = (VALUE)&off;
+
+	if (size < 0 || size > UINT16_MAX)
+		rb_raise(rb_eRangeError, "hash size out of uint16 range");
+
+	/* event name first */
+	dump_name(name, buf, &off);
+
+	/* number of attributes second */
+	rv = marshall_U_INT_16((LWES_U_INT_16)size, buf, MAX_MSG_SIZE, &off);
+	if (rv <= 0)
+		rb_raise(rb_eRuntimeError, "failed to dump num_attrs");
+
+	/* dump encoding before other fields */
+	enc = rb_hash_aref(event, sym_enc);
+	if (NIL_P(enc))
+		enc = rb_hash_aref(event, ENC);
+	if (! NIL_P(enc))
+		dump_enc(enc, buf, &off);
+
+	/* the rest of the fields */
+	rb_iterate(rb_each, event, event_hash_iter_i, (VALUE)&tmp);
+
+	if (lwes_emitter_emit_bytes(rle->emitter, buf, off) < 0)
 		rb_raise(rb_eRuntimeError, "failed to emit event");
 
-	return _event;
+	return event;
 }
 
 static void
-set_field(
-	struct lwes_event *event,
-	LWES_CONST_SHORT_STRING name,
+marshal_field(
+	VALUE name,
 	LWES_TYPE type,
-	VALUE val)
+	VALUE val,
+	LWES_BYTE_P buf,
+	size_t *off)
 {
-	int gc_retry = 1;
-	int rv;
-
-retry:
 	switch (type) {
-	case LWES_TYPE_BOOLEAN:
-		if (val == Qfalse)
-			rv = lwes_event_set_BOOLEAN(event, name, FALSE);
-		else if (val == Qtrue)
-			rv = lwes_event_set_BOOLEAN(event, name, TRUE);
-		else
-			rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
-			         name, RSTRING_PTR(rb_inspect(val)));
-		break;
 	case LWES_TYPE_STRING:
-		if (TYPE(val) != T_STRING)
-			rb_raise(rb_eTypeError, "non-String set for %s: %s",
-			         name, RSTRING_PTR(rb_inspect(val)));
-		rv = lwes_event_set_STRING(event, name, RSTRING_PTR(val));
+		if (dump_string(name, val, buf, off) > 0)
+			return;
+		break;
+	case LWES_TYPE_BOOLEAN:
+		if (dump_bool(name, val, buf, off) > 0)
+			return;
 		break;
 	default:
-		rv = lwesrb_event_set_num(event, name, type, val);
-	}
-	if (rv > 0) {
+		dump_name(name, buf, off);
+		lwesrb_dump_num(type, val, buf, off);
 		return;
-	} else {
-		if (rv == -3 && --gc_retry == 0) {
-			rb_gc();
-			goto retry;
-		}
-		rb_raise(rb_eRuntimeError,
-			 "failed to set %s=%s for event=%s (error: %d)",
-			 name, RSTRING_PTR(rb_inspect(val)),
-			 event->eventName, rv);
 	}
 
-	assert(0 && "you should never get here (set_field)");
+	rb_raise(rb_eRuntimeError, "failed to set %s=%s",
+		 RSTRING_PTR(name), RSTRING_PTR(rb_inspect(val)));
 }
 
-static VALUE _emit_struct(VALUE _argv)
+static void lwes_struct_class(
+	VALUE *event_class,
+	VALUE *name,
+	VALUE *type_list,
+	VALUE *have_enc,
+	VALUE event)
 {
-	VALUE *argv = (VALUE *)_argv;
-	VALUE self = argv[0];
-	VALUE _event = argv[1];
-	struct lwes_event *event = (struct lwes_event *)argv[2];
-	VALUE type_list = argv[3];
+	VALUE type_db;
+
+	*event_class = CLASS_OF(event);
+	type_db = rb_const_get(*event_class, id_TYPE_DB);
+
+	if (CLASS_OF(type_db) != cLWES_TypeDB)
+		rb_raise(rb_eArgError, "class does not have valid TYPE_DB");
+
+	*name = rb_const_get(*event_class, id_NAME);
+	if (TYPE(*name) != T_STRING)
+		rb_raise(rb_eArgError,
+		         "could not get valid const NAME: %s",
+		         RSTRING_PTR(rb_inspect(event)));
+
+	*type_list = rb_const_get(*event_class, id_TYPE_LIST);
+	if (TYPE(*type_list) != T_ARRAY)
+		rb_raise(rb_eArgError,
+		         "could not get valid const TYPE_LIST: %s",
+		         RSTRING_PTR(rb_inspect(event)));
+
+	*have_enc = rb_const_get(*event_class, id_HAVE_ENCODING);
+}
+
+static VALUE emit_struct(VALUE self, VALUE event)
+{
+	VALUE event_class, name, type_list, have_enc;
+	struct _rb_lwes_emitter *rle = _rle(self);
+	LWES_BYTE_P buf = rle->emitter->buffer;
+	size_t off = 0;
 	long i;
 	VALUE *tmp;
+	LWES_U_INT_16 num_attr = 0;
+	size_t num_attr_off;
 
-	if (TYPE(type_list) != T_ARRAY)
-		rb_raise(rb_eArgError, "could not get TYPE_LIST const");
+	lwes_struct_class(&event_class, &name, &type_list, &have_enc, event);
+
+	/* event name */
+	dump_name(name, buf, &off);
+
+	/* number of attributes, use a placeholder until we've iterated */
+	num_attr_off = off;
+	if (marshall_U_INT_16(0, buf, MAX_MSG_SIZE, &off) < 0)
+		rb_raise(rb_eRuntimeError,
+		         "failed to marshal number_of_attributes");
+
+	/* dump encoding before other fields */
+	if (have_enc == Qtrue) {
+		VALUE enc = rb_funcall(event, id_enc, 0, 0);
+		if (! NIL_P(enc)) {
+			++num_attr;
+			dump_enc(enc, buf, &off);
+		}
+	}
 
 	i = RARRAY_LEN(type_list);
 	for (tmp = RARRAY_PTR(type_list); --i >= 0; tmp++) {
 		/* inner: [ :field_sym, "field_name", type ] */
 		VALUE *inner = RARRAY_PTR(*tmp);
-		VALUE val = rb_struct_aref(_event, inner[0]);
-		LWES_CONST_SHORT_STRING name;
+		VALUE val, name;
 		LWES_TYPE type;
 
-		if (NIL_P(val))
+		if (inner[0] == sym_enc) /* encoding was already dumped */
 			continue;
 
-		name = RSTRING_PTR(inner[1]);
+		val = rb_struct_aref(event, inner[0]);
+		if (NIL_P(val))
+			continue; /* LWES doesn't know nil */
+
+		name = inner[1];
 		type = NUM2INT(inner[2]);
-		set_field(event, name, type, val);
+		++num_attr;
+		marshal_field(name, type, val, buf, &off);
 	}
 
-	if (lwes_emitter_emit(_rle(self)->emitter, event) < 0)
+	/* now we've iterated, we can accurately give num_attr */
+	if (marshall_U_INT_16(num_attr, buf, MAX_MSG_SIZE, &num_attr_off) <= 0)
+		rb_raise(rb_eRuntimeError, "failed to marshal num_attr");
+
+	if (lwes_emitter_emit_bytes(rle->emitter, buf, off) < 0)
 		rb_raise(rb_eRuntimeError, "failed to emit event");
 
-	return _event;
-}
-
-static VALUE _destroy_event(VALUE _event)
-{
-	struct lwes_event *event = (struct lwes_event *)_event;
-
-	assert(event && "destroying NULL event");
-	lwes_event_destroy(event);
-
-	return Qnil;
-}
-
-static VALUE emit_hash(VALUE self, VALUE name, VALUE _event)
-{
-	VALUE tmp[3];
-	struct lwes_event *event = lwesrb_event_create(NULL, name);
-
-	tmp[0] = self;
-	tmp[1] = _event;
-	tmp[2] = (VALUE)event;
-	rb_ensure(_emit_hash, (VALUE)&tmp, _destroy_event, (VALUE)event);
-
-	return _event;
-}
-
-static struct lwes_event_type_db * get_type_db(VALUE event_class)
-{
-	VALUE type_db = rb_const_get(event_class, id_TYPE_DB);
-
-        if (CLASS_OF(type_db) != cLWES_TypeDB)
-		rb_raise(rb_eArgError, "class does not have valid TYPE_DB");
-
-	return lwesrb_get_type_db(type_db);
-}
-
-static VALUE emit_struct(VALUE self, VALUE _event)
-{
-	VALUE argv[4];
-	VALUE event_class = CLASS_OF(_event);
-	struct lwes_event_type_db *db = get_type_db(event_class);
-	struct lwes_event *event;
-	VALUE name = rb_const_get(event_class, id_NAME);
-	VALUE type_list = rb_const_get(event_class, id_TYPE_LIST);
-
-	if (TYPE(name) != T_STRING || TYPE(type_list) != T_ARRAY)
-		rb_raise(rb_eArgError,
-		         "could not get class NAME or TYPE_LIST from: %s",
-		         RSTRING_PTR(rb_inspect(_event)));
-
-	event = lwesrb_event_create(db, name);
-
-	argv[0] = self;
-	argv[1] = _event;
-	argv[2] = (VALUE)event;
-	argv[3] = type_list;
-	rb_ensure(_emit_struct, (VALUE)&argv, _destroy_event, (VALUE)event);
-
-	return _event;
+	return event;
 }
 
 /*
@@ -489,5 +517,12 @@ void lwesrb_init_emitter(void)
 	LWESRB_MKID(TYPE_DB);
 	LWESRB_MKID(TYPE_LIST);
 	LWESRB_MKID(NAME);
-        LWESRB_MKID(new);
+	LWESRB_MKID(HAVE_ENCODING);
+	LWESRB_MKID(new);
+	LWESRB_MKID(size);
+	id_enc = rb_intern(LWES_ENCODING);
+	sym_enc = ID2SYM(id_enc);
+
+	ENC = rb_obj_freeze(rb_str_new2(LWES_ENCODING));
+	rb_define_const(mLWES, "ENCODING", ENC);
 }
