@@ -259,6 +259,7 @@ static VALUE emit_struct(VALUE self, VALUE event)
 	VALUE *tmp;
 	LWES_U_INT_16 num_attr = 0;
 	size_t num_attr_off;
+	VALUE *flds;
 
 	lwes_struct_class(&event_class, &name, &type_list, &have_enc, event);
 
@@ -281,7 +282,9 @@ static VALUE emit_struct(VALUE self, VALUE event)
 	}
 
 	i = RARRAY_LEN(type_list);
-	for (tmp = RARRAY_PTR(type_list); --i >= 0; tmp++) {
+	flds = RSTRUCT_PTR(event);
+	tmp = RARRAY_PTR(type_list);
+	for (; --i >= 0; tmp++, flds++) {
 		/* inner: [ :field_sym, "field_name", type ] */
 		VALUE *inner = RARRAY_PTR(*tmp);
 		VALUE val, name;
@@ -290,7 +293,7 @@ static VALUE emit_struct(VALUE self, VALUE event)
 		if (inner[0] == sym_enc) /* encoding was already dumped */
 			continue;
 
-		val = rb_struct_aref(event, inner[0]);
+		val = *flds;
 		if (NIL_P(val))
 			continue; /* LWES doesn't know nil */
 
