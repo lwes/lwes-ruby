@@ -99,16 +99,6 @@ class TestEmitter < Test::Unit::TestCase
     assert_equal 1, lines.grep(/int_ip = 192.168.1.1/).size
   end
 
-  def TODO_emit_ip_addr_object
-    emitter = LWES::Emitter.new(@options)
-    event = { :ip => IPAddr.new("192.168.1.1") }
-    out = lwes_listener do
-      assert_nothing_raised { emitter.emit("IP", event) }
-    end
-    lines = out.readlines
-    assert_equal 1, lines.grep(/\bip = 192.168.1.1/).size
-  end
-
   def test_emit_junk
     emitter = LWES::Emitter.new(@options)
     assert_raises(ArgumentError) { emitter.emit("JUNK", :junk => %r{junk}) }
