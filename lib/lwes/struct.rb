@@ -95,8 +95,13 @@ module LWES
       tmp.const_set :NAME, name.to_s
       ed = tmp.const_set :EVENT_DEF, {}
       event_def.each { |(field,type)| ed[field] = type }
-      type_list = event_def.map { |(field,type)| [ field, field.to_s, type ] }
+
+      # freeze since emitter.c can segfault if this ever changes
+      type_list = event_def.map do |(field,type)|
+        [ field, field.to_s.freeze, type ].freeze
+      end.freeze
       tmp.const_set :TYPE_LIST, type_list
+
       tmp.const_set :HAVE_ENCODING,
                     type_list.include?([ :enc, 'enc', LWES::INT_16 ])
 
