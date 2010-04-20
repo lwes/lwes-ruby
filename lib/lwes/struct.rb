@@ -102,6 +102,11 @@ module LWES
       end.freeze
       tmp.const_set :TYPE_LIST, type_list
 
+      aref_map = tmp.const_set :AREF_MAP, {}
+      type_list.each_with_index do |(field_sym,field_str,_),idx|
+        aref_map[field_sym] = aref_map[field_str] = idx
+      end
+
       tmp.const_set :HAVE_ENCODING,
                     type_list.include?([ :enc, 'enc', LWES::INT_16 ])
 
@@ -129,6 +134,38 @@ class ::#{tmp.name}
   end
 end
 EOS
+
+    # avoid linear scans for large structs, not sure if 50 is a good enough
+    # threshold but it won't help for anything <= 10 since Ruby (or at least
+    # MRI) already optimizes those cases
+    if event_def.size > 50
+      eval <<EOS
+class ::#{tmp.name}
+  alias __aref []
+  alias __aset []=
+  def [](key)
+    __aref(key.kind_of?(Fixnum) ? key : AREF_MAP[key])
+  end
+
+  def []=(key, value)
+    __aset(key.kind_of?(Fixnum) ? key : AREF_MAP[key], value)
+  end
+end
+EOS
+      fast_methods = []
+      event_def.each_with_index do |(fld,type), idx|
+        next if idx <= 9
+        if idx != aref_map[fld]
+          raise LoadError, "event_def corrupt: #{event_def}"
+        end
+        fast_methods << "undef_method :#{fld}, :#{fld}=\n"
+        fast_methods << "\ndef #{fld}; __aref #{idx}; end\n"
+        fast_methods << "\ndef #{fld}=(val); __aset #{idx}, val ; end\n"
+      end
+
+      eval("class ::#{tmp.name}; #{fast_methods.join("\n")}\n end")
+    end
+
     tmp
     end
   end
