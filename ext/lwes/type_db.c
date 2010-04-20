@@ -104,6 +104,7 @@ struct lwes_event_type_db * lwesrb_get_type_db(VALUE self)
 
 	Data_Get_Struct(self, struct _tdb, tdb);
 	if (! tdb->db) {
+		volatile VALUE raise_inspect;
 		rb_raise(rb_eRuntimeError,
 			 "couldn't get lwes_type_db from %s",
 			 RAISE_INSPECT(self));
