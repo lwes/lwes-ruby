@@ -57,6 +57,7 @@ class TestStruct < Test::Unit::TestCase
                          :class => :EVENT_BOOL,
                          :name => :EventBool)
     assert_equal "EVENT_BOOL", b.name
+    assert_equal false, b.const_get(:HAVE_ENCODING)
 
     e = assert_raises(RuntimeError) {
       LWES::Struct.new(:file=>MULTI_EVENT_ESF)
@@ -84,6 +85,7 @@ class TestStruct < Test::Unit::TestCase
     assert_equal "Event1", a.name
     assert a.const_get(:TYPE_DB).instance_of?(LWES::TypeDB)
     assert a.const_get(:EVENT_DEF).instance_of?(Hash)
+    assert a.const_get(:HAVE_ENCODING)
     assert_equal EXPECT_DB, a.const_get(:EVENT_DEF)
     assert_equal EXPECT_LIST, a.const_get(:TYPE_LIST)
     y = a.new
