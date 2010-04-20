@@ -103,11 +103,11 @@ struct lwes_event_type_db * lwesrb_get_type_db(VALUE self)
 	struct _tdb *tdb;
 
 	Data_Get_Struct(self, struct _tdb, tdb);
-	if (!tdb->db)
+	if (! tdb->db) {
 		rb_raise(rb_eRuntimeError,
-		         "couldn't get lwes_type_db from %s",
-		         RSTRING_PTR(rb_inspect(self)));
-
+			 "couldn't get lwes_type_db from %s",
+			 RAISE_INSPECT(self));
+	}
 	return tdb->db;
 }
 

@@ -40,4 +40,6 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off);
 #  define RSTRUCT_LEN(s) (RSTRUCT(s)->len)
 #endif
 
+#define RAISE_INSPECT(v) RSTRING_PTR(raise_inspect = rb_inspect(v))
+
 #endif /* LWES_RUBY_H */

@@ -72,9 +72,12 @@ static int dump_uint64(VALUE val, LWES_BYTE_P buf, size_t *off)
 	ID type = TYPE(val);
 
 	if ((type == T_FIXNUM && FIX2LONG(val) < 0) ||
-	    (type == T_BIGNUM && RTEST(rb_funcall(val, '<', 1, INT2FIX(0)))))
+	    (type == T_BIGNUM && RTEST(rb_funcall(val, '<', 1, INT2FIX(0))))) {
+		volatile VALUE raise_inspect;
+
 		rb_raise(rb_eRangeError, ":uint64 negative: %s",
-		         RSTRING_PTR(rb_inspect(val)));
+		         RAISE_INSPECT(val));
+	}
 
 	lwesrb_dump_type(LWES_U_INT_64_TOKEN, buf, off);
 	return marshall_U_INT_64((LWES_U_INT_64)tmp, buf, MAX_MSG_SIZE, off);
@@ -91,6 +94,7 @@ static int dump_int64(VALUE val, LWES_BYTE_P buf, size_t *off)
 static int dump_ip_addr(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	LWES_IP_ADDR addr;
+	volatile VALUE raise_inspect;
 
 	switch (TYPE(val)) {
 	case T_STRING:
@@ -103,7 +107,7 @@ static int dump_ip_addr(VALUE val, LWES_BYTE_P buf, size_t *off)
 	default:
 		rb_raise(rb_eTypeError,
 		         ":ip_addr address must be String or Integer: %s",
-		         RSTRING_PTR(rb_inspect(val)));
+		         RAISE_INSPECT(val));
 	}
 	lwesrb_dump_type(LWES_IP_ADDR_TOKEN, buf, off);
 	return marshall_IP_ADDR(addr, buf, MAX_MSG_SIZE, off);
@@ -164,6 +168,7 @@ void lwesrb_dump_num(LWES_BYTE type, VALUE val, LWES_BYTE_P buf, size_t *off)
  */
 void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 {
+	volatile VALUE raise_inspect;
 	int i, rv;
 	struct _type_fn_map *head;
 	VALUE *ary;
@@ -185,13 +190,13 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 		rv = head->fn(ary[1], buf, off);
 		if (rv > 0)
 			return;
+
 		rb_raise(rb_eRuntimeError,
 			 "dumping numeric type %s, type failed",
-			 RSTRING_PTR(rb_obj_as_string(type)));
+			 RAISE_INSPECT(type));
 	}
 
-	rb_raise(rb_eArgError,
-	         "unknown type: %s", RSTRING_PTR(rb_inspect(type)));
+	rb_raise(rb_eArgError, "unknown type: %s", RAISE_INSPECT(type));
 }
 
 void lwesrb_init_numeric(void)

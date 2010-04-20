@@ -202,6 +202,16 @@ class TestEmitter < Test::Unit::TestCase
     assert_equal 1, lines.grep(/\A\tc = d;\n\z/).size
   end
 
+  def test_emit_huge_event
+    emitter = LWES::Emitter.new(@options)
+    tmp = {
+      :a => ("b" * (1024 * 1024)),
+    }
+    assert_raises(ArgumentError) do
+      emitter.emit("BigTest", tmp)
+    end
+  end
+
   def test_close
     emitter = LWES::Emitter.new(@options)
     assert_nil emitter.close

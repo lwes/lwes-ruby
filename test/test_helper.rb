@@ -2,6 +2,7 @@ require 'pp'
 require 'tempfile'
 require 'test/unit'
 require 'lwes'
+GC.stress = true if ENV["GC_STRESS"].to_i != 0
 
 unless defined?(LISTENER_DEFAULTS)
   BEFORE_DELAY = ENV['BEFORE_DELAY'] ? ENV['BEFORE_DELAY'].to_f : 0.5

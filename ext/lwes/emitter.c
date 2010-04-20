@@ -21,9 +21,11 @@ static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 	if (val == Qtrue) {
 		tmp = TRUE;
 	} else if (val != Qfalse) {
+		volatile VALUE raise_inspect;
+
 		rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
 			 RSTRING_PTR(name),
-			 RSTRING_PTR(rb_inspect(val)));
+			 RAISE_INSPECT(val));
 	}
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_BOOLEAN_TOKEN, buf, off);
@@ -32,9 +34,11 @@ static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 
 static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 {
+	volatile VALUE raise_inspect;
+
 	if (TYPE(val) != T_STRING)
 		rb_raise(rb_eTypeError, "not a string: %s",
-		         RSTRING_PTR(rb_inspect(val)));
+		         RAISE_INSPECT(val));
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_STRING_TOKEN, buf, off);
 	return marshall_LONG_STRING(RSTRING_PTR(val), buf, MAX_MSG_SIZE, off);
@@ -108,6 +112,7 @@ static VALUE rle_alloc(VALUE klass)
  */
 static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 {
+	volatile VALUE raise_inspect;
 	VALUE *tmp = (VALUE *)memo;
 	VALUE val;
 	VALUE name;
@@ -148,7 +153,7 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 		return Qnil;
 
 	rb_raise(rb_eArgError, "unhandled type %s=%s",
-		 RSTRING_PTR(name), RSTRING_PTR(rb_inspect(val)));
+		 RSTRING_PTR(name), RAISE_INSPECT(val));
 	return Qfalse;
 }
 
@@ -200,6 +205,8 @@ marshal_field(
 	LWES_BYTE_P buf,
 	size_t *off)
 {
+	volatile VALUE raise_inspect;
+
 	switch (type) {
 	case LWES_TYPE_STRING:
 		if (dump_string(name, val, buf, off) > 0)
@@ -216,7 +223,7 @@ marshal_field(
 	}
 
 	rb_raise(rb_eRuntimeError, "failed to set %s=%s",
-		 RSTRING_PTR(name), RSTRING_PTR(rb_inspect(val)));
+		 RSTRING_PTR(name), RAISE_INSPECT(val));
 }
 
 static void lwes_struct_class(
@@ -227,6 +234,7 @@ static void lwes_struct_class(
 	VALUE event)
 {
 	VALUE type_db;
+	volatile VALUE raise_inspect;
 
 	*event_class = CLASS_OF(event);
 	type_db = rb_const_get(*event_class, id_TYPE_DB);
@@ -238,13 +246,13 @@ static void lwes_struct_class(
 	if (TYPE(*name) != T_STRING)
 		rb_raise(rb_eArgError,
 		         "could not get valid const NAME: %s",
-		         RSTRING_PTR(rb_inspect(event)));
+		         RAISE_INSPECT(event));
 
 	*type_list = rb_const_get(*event_class, id_TYPE_LIST);
 	if (TYPE(*type_list) != T_ARRAY)
 		rb_raise(rb_eArgError,
 		         "could not get valid const TYPE_LIST: %s",
-		         RSTRING_PTR(rb_inspect(event)));
+		         RAISE_INSPECT(event));
 
 	*have_enc = rb_const_get(*event_class, id_HAVE_ENCODING);
 }
@@ -322,12 +330,12 @@ static VALUE emit_struct(VALUE self, VALUE event)
  */
 static VALUE emitter_ltlt(VALUE self, VALUE event)
 {
-	if (TYPE(event) != T_STRUCT)
-		rb_raise(rb_eArgError,
-		         "Must be a Struct: %s",
-		         RSTRING_PTR(rb_inspect(event)));
+	volatile VALUE raise_inspect;
 
-	return emit_struct(self, event);
+	if (TYPE(event) == T_STRUCT)
+		return emit_struct(self, event);
+
+	rb_raise(rb_eArgError, "Must be a Struct: %s", RAISE_INSPECT(event));
 }
 
 /*
@@ -344,6 +352,7 @@ static VALUE emitter_ltlt(VALUE self, VALUE event)
  */
 static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 {
+	volatile VALUE raise_inspect;
 	VALUE name = Qnil;
 	VALUE event = Qnil;
 	argc = rb_scan_args(argc, argv, "11", &name, &event);
@@ -377,7 +386,7 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 	default:
 		rb_raise(rb_eArgError,
 		         "bad argument: %s, must be a String, Struct or Class",
-			 RSTRING_PTR(rb_inspect(name)));
+			 RAISE_INSPECT(name));
 	}
 
 	assert(0 && "should never get here");
