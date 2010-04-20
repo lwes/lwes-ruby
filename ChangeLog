@@ -1,3 +1,8 @@
+Version 0.4.0 (erik-s-chang)
+  * large performance improvements for ESF + Struct users with large events,
+    one real world app is nearly twice as fast
+  * GC safety fixes when raising exceptions
+
 Version 0.3.1 (erik-s-chang)
   * fix tests and enable Ruby warnings for tests
 
