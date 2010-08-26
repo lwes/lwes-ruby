@@ -34,14 +34,11 @@ static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 
 static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	volatile VALUE raise_inspect;
+	char *dst = StringValuePtr(val);
 
-	if (TYPE(val) != T_STRING)
-		rb_raise(rb_eTypeError, "not a string: %s",
-		         RAISE_INSPECT(val));
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_STRING_TOKEN, buf, off);
-	return marshall_LONG_STRING(RSTRING_PTR(val), buf, MAX_MSG_SIZE, off);
+	return marshall_LONG_STRING(dst, buf, MAX_MSG_SIZE, off);
 }
 
 static void dump_enc(VALUE enc, LWES_BYTE_P buf, size_t *off)
@@ -234,7 +231,6 @@ static void lwes_struct_class(
 	VALUE event)
 {
 	VALUE type_db;
-	volatile VALUE raise_inspect;
 
 	*event_class = CLASS_OF(event);
 	type_db = rb_const_get(*event_class, id_TYPE_DB);
@@ -243,16 +239,9 @@ static void lwes_struct_class(
 		rb_raise(rb_eArgError, "class does not have valid TYPE_DB");
 
 	*name = rb_const_get(*event_class, id_NAME);
-	if (TYPE(*name) != T_STRING)
-		rb_raise(rb_eArgError,
-		         "could not get valid const NAME: %s",
-		         RAISE_INSPECT(event));
-
+	Check_Type(*name, T_STRING);
 	*type_list = rb_const_get(*event_class, id_TYPE_LIST);
-	if (TYPE(*type_list) != T_ARRAY)
-		rb_raise(rb_eArgError,
-		         "could not get valid const TYPE_LIST: %s",
-		         RAISE_INSPECT(event));
+	Check_Type(*type_list, T_ARRAY);
 
 	*have_enc = rb_const_get(*event_class, id_HAVE_ENCODING);
 }
@@ -330,12 +319,9 @@ static VALUE emit_struct(VALUE self, VALUE event)
  */
 static VALUE emitter_ltlt(VALUE self, VALUE event)
 {
-	volatile VALUE raise_inspect;
+	Check_Type(event, T_STRUCT);
 
-	if (TYPE(event) == T_STRUCT)
-		return emit_struct(self, event);
-
-	rb_raise(rb_eArgError, "Must be a Struct: %s", RAISE_INSPECT(event));
+	return emit_struct(self, event);
 }
 
 /*
@@ -373,7 +359,7 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 		return emit_struct(self, event);
 	case T_CLASS:
 		if (TYPE(event) != T_HASH)
-			rb_raise(rb_eArgError,
+			rb_raise(rb_eTypeError,
 			         "second argument must be a Hash when first"
 			         " is a Class");
 

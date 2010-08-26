@@ -19,9 +19,9 @@ class TestEmitStruct < Test::Unit::TestCase
 
   def test_emit_crap
     emitter = LWES::Emitter.new(@options)
-    assert_raise(ArgumentError) { emitter << "HHI" }
-    assert_raise(ArgumentError) { emitter << [] }
-    assert_raise(ArgumentError) { emitter << {} }
+    assert_raise(TypeError) { emitter << "HHI" }
+    assert_raise(TypeError) { emitter << [] }
+    assert_raise(TypeError) { emitter << {} }
   end
 
   def test_emit_struct_full
