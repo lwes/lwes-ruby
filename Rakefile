@@ -17,3 +17,8 @@ RDoc::Task.new do |rd|
   rd.main = "README"
   rd.rdoc_files.include("README", "lib/**/*.rb", "ext/lwes/*.c")
 end
+
+desc "update website"
+task :update_website => :rerdoc do
+  system 'rsync -avz html/ rubyforge.org:/var/www/gforge-projects/lwes/'
+end
