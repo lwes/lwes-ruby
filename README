@@ -25,6 +25,12 @@ may support listening and journaling capabilities as time allows.
 
 See the SourceForge project.
 
+== DEVELOPMENT:
+
+Our SVN repository is here:
+
+  https://lwes.svn.sourceforge.net/svnroot/lwes/lwes-ruby
+
 == INSTALL:
 
 This library is easy to install, if you have the LWES library already
