@@ -1,3 +1,8 @@
+Version 0.5.0 (erik-s-chang)
+  * automatic type coercion between String and Integer types when
+    using Structs
+  * bundled LWES C library to avoid network dependency during install
+
 Version 0.4.0 (erik-s-chang)
   * large performance improvements for ESF + Struct users with large events,
     one real world app is nearly twice as fast

@@ -25,7 +25,7 @@ def fetch(uri_str, limit = 10)
 end
 
 unless have_library('lwes') && have_header('lwes.h')
-  warn "LWES library not found, downloading and building"
+  warn "LWES library not found, building locally"
   Dir.chdir(pwd) do
     unless test ?r, tgz
       response = fetch(url)

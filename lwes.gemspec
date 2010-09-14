@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{lwes}
-  s.version = "0.4.0"
+  s.version = "0.5.0"
   s.date = Time.now
   s.authors = ["Erik S. Chang", "Frank Maritato"]
   s.email = %q{lwes-devel@lists.sourceforge.net}
@@ -24,6 +24,7 @@ examples/my_events.esf
 ext/lwes/emitter.c
 ext/lwes/extconf.rb
 ext/lwes/lwes-0.22.3.diff
+ext/lwes/lwes-0.22.3.tar.gz
 ext/lwes/lwes.c
 ext/lwes/lwes_ruby.h
 ext/lwes/numeric.c
