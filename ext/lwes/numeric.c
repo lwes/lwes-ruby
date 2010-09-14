@@ -6,6 +6,7 @@ static ID
   sym_int32, sym_uint32,
   sym_int64, sym_uint64,
   sym_ip_addr;
+static ID id_to_i;
 
 void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off)
 {
@@ -136,6 +137,9 @@ static int dump_num(
 	LWES_BYTE_P buf,
 	size_t *off)
 {
+	if (type != LWES_TYPE_IP_ADDR && TYPE(val) == T_STRING)
+		val = rb_funcall(val, id_to_i, 0, 0);
+
 	switch (type) {
 	case LWES_TYPE_U_INT_16: return dump_uint16(val, buf, off);
 	case LWES_TYPE_INT_16: return dump_int16(val, buf, off);
@@ -210,6 +214,7 @@ void lwesrb_init_numeric(void)
 	LWESRB_MKSYM(int64);
 	LWESRB_MKSYM(uint64);
 	LWESRB_MKSYM(ip_addr);
+	id_to_i = rb_intern("to_i");
 
 	/*
 	 * we needed to have constants for compilation, so we set the

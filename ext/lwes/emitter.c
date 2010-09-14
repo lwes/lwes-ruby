@@ -34,7 +34,14 @@ static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 
 static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	char *dst = StringValuePtr(val);
+	char *dst;
+
+	switch (TYPE(val)) {
+	case T_BIGNUM:
+	case T_FIXNUM:
+		val = rb_obj_as_string(val);
+	}
+	dst = StringValuePtr(val);
 
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_STRING_TOKEN, buf, off);

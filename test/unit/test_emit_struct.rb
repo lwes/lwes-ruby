@@ -51,6 +51,33 @@ class TestEmitStruct < Test::Unit::TestCase
     end
   end
 
+  def test_emit_struct_coerce_type
+    s = nil
+    out = lwes_listener do
+      assert_nothing_raised do
+        emitter = LWES::Emitter.new(@options)
+        s = Event1.new
+        s.t_bool = true
+        s.t_int16 = '-1000'
+        s.t_uint16 = 1000
+        s.t_int32 = -64444
+        s.t_uint32 = 64444
+        s.t_int64 = 10_000_000_000
+        s.t_uint64 = 10_000_000_000
+        s.t_ip_addr = '192.168.0.1'
+        s.t_string = 1234567
+        emitter.emit(s)
+      end
+    end
+    out = out.readlines
+    s.members.each do |m|
+      value = s[m.to_sym] or next
+      regex = /\b#{m} = #{value};/
+      assert_equal 1, out.grep(regex).size,
+                   "#{regex.inspect} didn't match #{out.inspect}"
+    end
+  end
+
   def test_emit_struct_cplusplus
     s = nil
     out = lwes_listener do
