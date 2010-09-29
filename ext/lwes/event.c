@@ -140,6 +140,9 @@ static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr)
 	return Qnil;
 }
 
+/*
+ * Returns an LWES::Event object as a plain Ruby hash
+ */
 static VALUE to_hash(VALUE self)
 {
 	struct lwes_event *e = lwesrb_get_event(self);
@@ -147,6 +150,17 @@ static VALUE to_hash(VALUE self)
 	return lwesrb_event_to_hash(e);
 }
 
+/*
+ * call-seq:
+ *
+ *	receiver = UDPSocket.new
+ *	receiver.bind(nil, 12345)
+ *	buf, addr = receiver.recvfrom(65536)
+ *	parsed = LWES::Event.parse(buf)
+ *	parsed.to_hash -> hash
+ *
+ * Parses a string +buf+ and returns a new LWES::Event object
+ */
 static VALUE parse(VALUE self, VALUE buf)
 {
 	VALUE event = event_alloc(cLWES_Event);

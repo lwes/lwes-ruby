@@ -1,3 +1,7 @@
+Version 0.6.0 (erik-s-chang)
+  * start of a new LWES::Event type, mostly incomplete, but able
+    to parse UDP buffers into a hash.
+
 Version 0.5.0 (erik-s-chang)
   * automatic type coercion between String and Integer types when
     using Structs
