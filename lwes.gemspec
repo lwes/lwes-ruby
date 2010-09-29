@@ -27,6 +27,7 @@ ext/lwes/lwes-0.22.3.diff
 ext/lwes/lwes-0.22.3.tar.gz
 ext/lwes/lwes.c
 ext/lwes/lwes_ruby.h
+ext/lwes/event.c
 ext/lwes/numeric.c
 ext/lwes/type_db.c
 lib/lwes.rb
