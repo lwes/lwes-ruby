@@ -1,10 +1,10 @@
 #include "lwes_ruby.h"
-static VALUE cLWES_Event;
+VALUE cLWES_Event;
 
 static ID id_TYPE_DB, id_NAME;
 static VALUE sym_name;
 
-static struct lwes_event * lwesrb_get_event(VALUE self)
+struct lwes_event * lwesrb_get_event(VALUE self)
 {
 	struct lwes_event *event;
 

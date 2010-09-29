@@ -52,6 +52,17 @@ class TestEvent < Test::Unit::TestCase
     }
     assert_instance_of LWES::Event, parsed
     assert_equal expect, parsed.to_hash
+
+    # test for round tripping
+    emitter.emit parsed
+    buf, addr = receiver.recvfrom(65536)
+    assert_instance_of LWES::Event, parsed
+    assert_equal expect, parsed.to_hash
+
+    emitter << parsed
+    buf, addr = receiver.recvfrom(65536)
+    assert_instance_of LWES::Event, parsed
+    assert_equal expect, parsed.to_hash
     ensure
       receiver.close
   end

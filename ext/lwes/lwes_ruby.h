@@ -44,6 +44,10 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off);
 
 #define RAISE_INSPECT(v) RSTRING_PTR(raise_inspect = rb_inspect(v))
 
+extern VALUE cLWES_Event;
+
+struct lwes_event * lwesrb_get_event(VALUE self);
+
 VALUE lwesrb_event_to_hash(struct lwes_event *e);
 
 #endif /* LWES_RUBY_H */

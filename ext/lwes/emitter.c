@@ -317,6 +317,15 @@ static VALUE emit_struct(VALUE self, VALUE event)
 	return event;
 }
 
+static VALUE emit_event(VALUE self, VALUE event)
+{
+	struct lwes_event *e = lwesrb_get_event(event);
+
+	if (lwes_emitter_emit(_rle(self)->emitter, e) < 0)
+		rb_raise(rb_eRuntimeError, "failed to emit event");
+
+	return event;
+}
 /*
  * call-seq:
  *   emitter = LWES::Emitter.new
@@ -326,9 +335,13 @@ static VALUE emit_struct(VALUE self, VALUE event)
  */
 static VALUE emitter_ltlt(VALUE self, VALUE event)
 {
-	Check_Type(event, T_STRUCT);
+	if (rb_obj_is_kind_of(event, cLWES_Event)) {
+		return emit_event(self, event);
+	} else {
+		Check_Type(event, T_STRUCT);
 
-	return emit_struct(self, event);
+		return emit_struct(self, event);
+	}
 }
 
 /*
@@ -377,6 +390,8 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 		event = rb_funcall(name, id_new, 1, event);
 		return emit_struct(self, event);
 	default:
+		if (rb_obj_is_kind_of(name, cLWES_Event))
+			return emit_event(self, name);
 		rb_raise(rb_eArgError,
 		         "bad argument: %s, must be a String, Struct or Class",
 			 RAISE_INSPECT(name));
