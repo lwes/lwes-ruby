@@ -22,4 +22,5 @@ void Init_lwes_ext(void)
 	lwesrb_init_numeric();
 	lwesrb_init_emitter();
 	lwesrb_init_type_db();
+	lwesrb_init_event();
 }
