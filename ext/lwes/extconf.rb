@@ -11,6 +11,20 @@ inst = "#{pwd}/.inst"
 tgz = "#{dir}.tar.gz"
 url = "http://sourceforge.net/projects/lwes/files/lwes-c/#{v}/#{tgz}/download"
 
+def sub_cd(dir, &b)
+  oldpwd = ENV["PWD"]
+  begin
+    ENV["PWD"] = dir
+    Dir.chdir(dir, &b)
+  ensure
+    if oldpwd
+      ENV["PWD"] = oldpwd
+    else
+      ENV.delete("PWD")
+    end
+  end
+end
+
 # from Net::HTTP example
 def fetch(uri_str, limit = 10)
   raise ArgumentError, 'HTTP redirect too deep' if limit == 0
@@ -26,7 +40,7 @@ end
 
 unless have_library('lwes') && have_header('lwes.h')
   warn "LWES library not found, building locally"
-  Dir.chdir(pwd) do
+  sub_cd(pwd) do
     unless test ?r, tgz
       response = fetch(url)
       File.open("#{tgz}.#{$$}.#{rand}.tmp", "wb") do |fp|
@@ -37,7 +51,7 @@ unless have_library('lwes') && have_header('lwes.h')
     unless test ?r, "#{inst}/.ok"
       FileUtils.rm_rf(dir)
       system('tar', 'zxf', tgz) or abort "tar failed with #{$?}"
-      Dir.chdir(dir) do
+      sub_cd(dir) do
         system("patch", "-p1", "-i", diff) or abort "patch failed: #{$?}"
         args = %w(--disable-shared
                   --disable-hardcore
