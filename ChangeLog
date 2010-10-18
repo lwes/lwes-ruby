@@ -1,3 +1,6 @@
+Version 0.6.1 (erik-s-chang)
+  * fix broken 0.6.0 release, no code changes
+
 Version 0.6.0 (erik-s-chang)
   * start of a new LWES::Event type, mostly incomplete, but able
     to parse UDP buffers into a hash.

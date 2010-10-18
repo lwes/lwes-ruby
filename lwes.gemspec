@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{lwes}
-  s.version = "0.6.0"
+  s.version = "0.6.1"
   s.date = Time.now
   s.authors = ["Erik S. Chang", "Frank Maritato"]
   s.email = %q{lwes-devel@lists.sourceforge.net}
@@ -22,16 +22,16 @@ Rakefile
 examples/demo.rb
 examples/my_events.esf
 ext/lwes/emitter.c
+ext/lwes/event.c
 ext/lwes/extconf.rb
 ext/lwes/lwes-0.22.3.diff
-ext/lwes/lwes-0.22.3.tar.gz
 ext/lwes/lwes.c
 ext/lwes/lwes_ruby.h
-ext/lwes/event.c
 ext/lwes/numeric.c
 ext/lwes/type_db.c
 lib/lwes.rb
 lib/lwes/emitter.rb
+lib/lwes/event.rb
 lib/lwes/struct.rb
 lib/lwes/type_db.rb
 lwes.gemspec
@@ -42,8 +42,11 @@ test/unit/test1.esf
 test/unit/test2.esf
 test/unit/test_emit_struct.rb
 test/unit/test_emitter.rb
+test/unit/test_event.rb
 test/unit/test_struct.rb
 test/unit/test_type_db.rb
+) + %w(
+ext/lwes/lwes-0.22.3.tar.gz
 )
   s.rubyforge_project = 'lwes'
   s.test_files = s.files.grep(%r{\Atest/unit/test_})
