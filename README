@@ -48,7 +48,7 @@ gem.
   emitter = LWES::Emitter.new(:address => '224.1.1.11',
                               :port => 12345,
                               :heartbeat => 30, # nil to disable
-                              :ttl => 1) # nil for no ttl
+                              :ttl => 1) # nil for default TTL(3)
 
   # parse your ESF file at startup, the example below assumes you
   # have "Event1" and "Event2" defined in your ESF file:
@@ -86,7 +86,7 @@ just use an emitter to send Hash objects:
   emitter = LWES::Emitter.new(:address => '224.1.1.11',
                               :port => 12345,
                               :heartbeat => 30, # nil to disable
-                              :ttl => 1) # nil for no ttl
+                              :ttl => 1) # nil for default TTL(3)
 
   # Since we can't reliably map certain Ruby types to LWES types, you'll
   # have to specify them explicitly for IP addresses and all Integer
