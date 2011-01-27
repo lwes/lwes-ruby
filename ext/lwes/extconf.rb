@@ -4,7 +4,7 @@ require 'fileutils'
 dir_config('lwes')
 
 pwd = File.expand_path(File.dirname(__FILE__))
-v = '0.22.3'
+v = '0.23.1'
 dir = "lwes-#{v}"
 diff = "#{pwd}/#{dir}.diff"
 inst = "#{pwd}/.inst"
@@ -52,7 +52,9 @@ unless have_library('lwes') && have_header('lwes.h')
       FileUtils.rm_rf(dir)
       system('tar', 'zxf', tgz) or abort "tar failed with #{$?}"
       sub_cd(dir) do
-        system("patch", "-p1", "-i", diff) or abort "patch failed: #{$?}"
+        if File.exist?(diff)
+          system("patch", "-p1", "-i", diff) or abort "patch failed: #{$?}"
+        end
         args = %w(--disable-shared
                   --disable-hardcore
                   --with-pic
