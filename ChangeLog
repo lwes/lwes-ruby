@@ -1,3 +1,6 @@
+Version 0.7.0 (erik-s-chang)
+  * rely on lwes-c 0.23.1 instead of patching 0.22.3
+
 Version 0.6.1 (erik-s-chang)
   * fix broken 0.6.0 release, no code changes
 
