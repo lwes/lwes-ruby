@@ -99,7 +99,7 @@ static int dump_ip_addr(VALUE val, LWES_BYTE_P buf, size_t *off)
 
 	switch (TYPE(val)) {
 	case T_STRING:
-		addr.s_addr = inet_addr(RSTRING_PTR(val));
+		addr.s_addr = inet_addr(StringValueCStr(val));
 		break;
 	case T_FIXNUM:
 	case T_BIGNUM:

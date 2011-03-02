@@ -26,23 +26,20 @@ static VALUE tdb_init(VALUE self, VALUE path)
 {
 	struct _tdb *tdb;
 	int gc_retry = 1;
-
-	if (TYPE(path) != T_STRING)
-		rb_raise(rb_eArgError, "path must be a string");
+	char *cpath = StringValueCStr(path);
 
 	Data_Get_Struct(self, struct _tdb, tdb);
 	if (tdb->db)
 		rb_raise(rb_eRuntimeError, "ESF already initialized");
 retry:
-	tdb->db = lwes_event_type_db_create(RSTRING_PTR(path));
+	tdb->db = lwes_event_type_db_create(cpath);
 	if (!tdb->db) {
 		if (--gc_retry == 0) {
 			rb_gc();
 			goto retry;
 		}
 		rb_raise(rb_eRuntimeError,
-		         "failed to create type DB for LWES file %s",
-		         RSTRING_PTR(path));
+		         "failed to create type DB for LWES file %s", cpath);
 	}
 
 	return Qnil;

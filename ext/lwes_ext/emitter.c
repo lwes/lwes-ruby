@@ -3,18 +3,16 @@
 static VALUE ENC; /* LWES_ENCODING */
 static ID id_TYPE_DB, id_TYPE_LIST, id_NAME, id_HAVE_ENCODING;
 static ID id_new, id_enc, id_size;
-static ID sym_enc;
+static VALUE sym_enc;
 
-static void dump_name(VALUE name, LWES_BYTE_P buf, size_t *off)
+static void dump_name(char *name, LWES_BYTE_P buf, size_t *off)
 {
-	char *s = RSTRING_PTR(name);
-
-	if (marshall_SHORT_STRING(s, buf, MAX_MSG_SIZE, off) > 0)
+	if (marshall_SHORT_STRING(name, buf, MAX_MSG_SIZE, off) > 0)
 		return;
-	rb_raise(rb_eRuntimeError, "failed to dump name=%s", s);
+	rb_raise(rb_eRuntimeError, "failed to dump name=%s", name);
 }
 
-static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
+static int dump_bool(char *name, VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	LWES_BOOLEAN tmp = FALSE;
 
@@ -24,15 +22,14 @@ static int dump_bool(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 		volatile VALUE raise_inspect;
 
 		rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
-			 RSTRING_PTR(name),
-			 RAISE_INSPECT(val));
+			 name, RAISE_INSPECT(val));
 	}
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_BOOLEAN_TOKEN, buf, off);
 	return marshall_BOOLEAN(tmp, buf, MAX_MSG_SIZE, off);
 }
 
-static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
+static int dump_string(char *name, VALUE val, LWES_BYTE_P buf, size_t *off)
 {
 	char *dst;
 
@@ -41,7 +38,7 @@ static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 	case T_FIXNUM:
 		val = rb_obj_as_string(val);
 	}
-	dst = StringValuePtr(val);
+	dst = StringValueCStr(val);
 
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_STRING_TOKEN, buf, off);
@@ -50,7 +47,7 @@ static int dump_string(VALUE name, VALUE val, LWES_BYTE_P buf, size_t *off)
 
 static void dump_enc(VALUE enc, LWES_BYTE_P buf, size_t *off)
 {
-	dump_name(ENC, buf, off);
+	dump_name(LWES_ENCODING, buf, off);
 	lwesrb_dump_num(LWES_INT_16_TOKEN, enc, buf, off);
 }
 
@@ -120,6 +117,7 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 	VALUE *tmp = (VALUE *)memo;
 	VALUE val;
 	VALUE name;
+	char *attr_name;
 	int rv = 0;
 	LWES_BYTE_P buf = (LWES_BYTE_P)tmp[0];
 	size_t *off = (size_t *)tmp[1];
@@ -133,8 +131,9 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 	if (name == sym_enc) return Qnil; /* already dumped first */
 
 	name = rb_obj_as_string(name);
+	attr_name = StringValueCStr(name);
 
-	if (strcmp(RSTRING_PTR(name), LWES_ENCODING) == 0)
+	if (strcmp(attr_name, LWES_ENCODING) == 0)
 		return Qnil;
 
 	val = tmp[1];
@@ -142,14 +141,14 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 	switch (TYPE(val)) {
 	case T_TRUE:
 	case T_FALSE:
-		rv = dump_bool(name, val, buf, off);
+		rv = dump_bool(attr_name, val, buf, off);
 		break;
 	case T_ARRAY:
-		dump_name(name, buf, off);
+		dump_name(attr_name, buf, off);
 		lwesrb_dump_num_ary(val, buf, off);
 		return Qnil;
 	case T_STRING:
-		rv = dump_string(name, val, buf, off);
+		rv = dump_string(attr_name, val, buf, off);
 		break;
 	}
 
@@ -157,7 +156,7 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 		return Qnil;
 
 	rb_raise(rb_eArgError, "unhandled type %s=%s",
-		 RSTRING_PTR(name), RAISE_INSPECT(val));
+		 attr_name, RAISE_INSPECT(val));
 	return Qfalse;
 }
 
@@ -170,6 +169,7 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 	VALUE enc;
 	int size = NUM2INT(rb_funcall(event, id_size, 0, 0));
 	int rv;
+	char *event_name = StringValueCStr(name);
 
 	tmp[0] = (VALUE)buf;
 	tmp[1] = (VALUE)&off;
@@ -178,7 +178,7 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 		rb_raise(rb_eRangeError, "hash size out of uint16 range");
 
 	/* event name first */
-	dump_name(name, buf, &off);
+	dump_name(event_name, buf, &off);
 
 	/* number of attributes second */
 	rv = marshall_U_INT_16((LWES_U_INT_16)size, buf, MAX_MSG_SIZE, &off);
@@ -203,7 +203,7 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 
 static void
 marshal_field(
-	VALUE name,
+	char *name,
 	LWES_TYPE type,
 	VALUE val,
 	LWES_BYTE_P buf,
@@ -227,7 +227,7 @@ marshal_field(
 	}
 
 	rb_raise(rb_eRuntimeError, "failed to set %s=%s",
-		 RSTRING_PTR(name), RAISE_INSPECT(val));
+		 name, RAISE_INSPECT(val));
 }
 
 static void lwes_struct_class(
@@ -264,11 +264,13 @@ static VALUE emit_struct(VALUE self, VALUE event)
 	LWES_U_INT_16 num_attr = 0;
 	size_t num_attr_off;
 	VALUE *flds;
+	char *str;
 
 	lwes_struct_class(&event_class, &name, &type_list, &have_enc, event);
 
 	/* event name */
-	dump_name(name, buf, &off);
+	str = StringValueCStr(name);
+	dump_name(str, buf, &off);
 
 	/* number of attributes, use a placeholder until we've iterated */
 	num_attr_off = off;
@@ -291,7 +293,7 @@ static VALUE emit_struct(VALUE self, VALUE event)
 	for (; --i >= 0; tmp++, flds++) {
 		/* inner: [ :field_sym, "field_name", type ] */
 		VALUE *inner = RARRAY_PTR(*tmp);
-		VALUE val, name;
+		VALUE val;
 		LWES_TYPE type;
 
 		if (inner[0] == sym_enc) /* encoding was already dumped */
@@ -301,10 +303,10 @@ static VALUE emit_struct(VALUE self, VALUE event)
 		if (NIL_P(val))
 			continue; /* LWES doesn't know nil */
 
-		name = inner[1];
+		str = StringValueCStr(inner[1]);
 		type = NUM2INT(inner[2]);
 		++num_attr;
-		marshal_field(name, type, val, buf, &off);
+		marshal_field(str, type, val, buf, &off);
 	}
 
 	/* now we've iterated, we can accurately give num_attr */
@@ -463,6 +465,7 @@ static VALUE _create(VALUE self, VALUE options)
 {
 	struct _rb_lwes_emitter *rle = _rle(self);
 	VALUE address, iface, port, heartbeat, ttl;
+	const char *str;
 
 	rle->emit_heartbeat = FALSE;
 	rle->freq = 0;
@@ -476,7 +479,7 @@ static VALUE _create(VALUE self, VALUE options)
 	address = rb_hash_aref(options, ID2SYM(rb_intern("address")));
 	if (TYPE(address) != T_STRING)
 		rb_raise(rb_eTypeError, ":address must be a string");
-	rle->address = my_strdup(RSTRING_PTR(address));
+	rle->address = my_strdup(StringValueCStr(address));
 
 	iface = rb_hash_aref(options, ID2SYM(rb_intern("iface")));
 	switch (TYPE(iface)) {
@@ -484,7 +487,7 @@ static VALUE _create(VALUE self, VALUE options)
 		rle->iface = NULL;
 		break;
 	case T_STRING:
-		rle->iface = my_strdup(RSTRING_PTR(iface));
+		rle->iface = my_strdup(StringValueCStr(iface));
 		break;
 	default:
 		rb_raise(rb_eTypeError, ":iface must be a String or nil");

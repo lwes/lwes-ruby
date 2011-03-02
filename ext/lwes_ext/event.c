@@ -35,7 +35,7 @@ static VALUE event_alloc(VALUE klass)
 		VALUE type_db = rb_const_get(klass, id_TYPE_DB);
 		struct lwes_event_type_db *tdb = lwesrb_get_type_db(type_db);
 		VALUE name = rb_const_get(klass, id_NAME);
-		const char *ename = StringValuePtr(name);
+		const char *ename = StringValueCStr(name);
 
 		e = lwes_event_create(tdb, ename);
 		if (e == NULL) {
@@ -86,7 +86,7 @@ static VALUE event_aset(VALUE self, VALUE key, VALUE val)
 {
 	struct lwes_event_type_db *tdb = get_type_db(self);
 	struct lwes_event *e = lwesrb_get_event(self);
-	const char *attr = StringValuePtr(key);
+	const char *attr = StringValueCStr(key);
 	struct lwes_hash *ehash = lwes_hash_get(tdb->events, e->eventName);
 	LWES_BYTE *attr_type;
 
