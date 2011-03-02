@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.email = %q{lwes-devel@lists.sourceforge.net}
   s.summary = %q{Ruby API for the Light Weight Event System}
   s.homepage = %q{http://www.lwes.org/}
-  s.extensions = %w(ext/lwes/extconf.rb)
+  s.extensions = %w(ext/lwes_ext/extconf.rb)
   s.description = %q{
 The LWES Light-Weight Event System is a framework for allowing the exchange of
 information from many machines to many machines in a controlled, platform
@@ -21,13 +21,13 @@ README
 Rakefile
 examples/demo.rb
 examples/my_events.esf
-ext/lwes/emitter.c
-ext/lwes/event.c
-ext/lwes/extconf.rb
-ext/lwes/lwes.c
-ext/lwes/lwes_ruby.h
-ext/lwes/numeric.c
-ext/lwes/type_db.c
+ext/lwes_ext/emitter.c
+ext/lwes_ext/event.c
+ext/lwes_ext/extconf.rb
+ext/lwes_ext/lwes.c
+ext/lwes_ext/lwes_ruby.h
+ext/lwes_ext/numeric.c
+ext/lwes_ext/type_db.c
 lib/lwes.rb
 lib/lwes/emitter.rb
 lib/lwes/event.rb
@@ -45,7 +45,7 @@ test/unit/test_event.rb
 test/unit/test_struct.rb
 test/unit/test_type_db.rb
 ) + %w(
-ext/lwes/lwes-0.23.1.tar.gz
+ext/lwes_ext/lwes-0.23.1.tar.gz
 )
   s.rubyforge_project = 'lwes'
   s.test_files = s.files.grep(%r{\Atest/unit/test_})
