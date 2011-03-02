@@ -5,7 +5,7 @@ desc "run all tests"
 task :test => %w(test:unit)
 
 desc "run unit tests"
-Rake::TestTask.new('test:unit') do |t|
+Rake::TestTask.new('test:unit' => :compile) do |t|
   t.libs << "ext/lwes_ext"
   t.test_files = FileList['test/unit/test_*.rb']
   t.warning = true
