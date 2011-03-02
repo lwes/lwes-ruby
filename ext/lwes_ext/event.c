@@ -20,7 +20,6 @@ static void event_free(void *ptr)
 	lwes_event_destroy(event);
 }
 
-
 static VALUE event_alloc(VALUE klass)
 {
 	struct lwes_event *e;
@@ -91,11 +90,11 @@ static VALUE event_aset(VALUE self, VALUE key, VALUE val)
 	LWES_BYTE *attr_type;
 
 	if (ehash == NULL)
-		rb_raise(rb_eArgError, "invalid event: %s\n", e->eventName);
+		rb_raise(rb_eArgError, "invalid event: %s", e->eventName);
 
 	attr_type = lwes_hash_get(ehash, attr);
 	if (attr_type == NULL)
-		rb_raise(rb_eArgError, "invalid attribute: %s\n", attr);
+		rb_raise(rb_eArgError, "invalid attribute: %s", attr);
 
 	switch (*attr_type) {
 	}
@@ -176,7 +175,7 @@ static VALUE parse(VALUE self, VALUE buf)
 	rc = lwes_event_from_bytes(e, bytes, num_bytes, 0, &dtmp);
 	if (rc < 0)
 		rb_raise(rb_eRuntimeError,
-		         "failed to parse LWES event (code: %d)\n", rc);
+		         "failed to parse LWES event (code: %d)", rc);
 	return event;
 }
 

@@ -465,7 +465,6 @@ static VALUE _create(VALUE self, VALUE options)
 {
 	struct _rb_lwes_emitter *rle = _rle(self);
 	VALUE address, iface, port, heartbeat, ttl;
-	const char *str;
 
 	rle->emit_heartbeat = FALSE;
 	rle->freq = 0;
