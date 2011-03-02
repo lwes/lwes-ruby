@@ -11,7 +11,7 @@ Rake::TestTask.new('test:unit') do |t|
   t.verbose = true if ENV["VERBOSE"].to_i > 0
 end
 
-gem 'rdoc', '>= 2.4.3'
+gem 'rdoc', '>= 3.5.3'
 require 'rdoc/task'
 RDoc::Task.new do |rd|
   rd.main = "README"

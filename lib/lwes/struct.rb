@@ -153,7 +153,7 @@ class ::#{tmp.name}
 end
 EOS
       fast_methods = []
-      event_def.each_with_index do |(fld,type), idx|
+      event_def.each_with_index do |(fld,_), idx|
         next if idx <= 9
         if idx != aref_map[fld]
           raise LoadError, "event_def corrupt: #{event_def}"

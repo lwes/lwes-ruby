@@ -133,7 +133,7 @@ class TestEmitStruct < Test::Unit::TestCase
 
   def test_emit_from_class_bad_type
     out = lwes_listener do
-      e = assert_raises(TypeError) do
+      assert_raises(TypeError) do
         emitter = LWES::Emitter.new(@options)
         opt = {
           :t_int16 => -1000,
