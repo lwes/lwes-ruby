@@ -49,4 +49,5 @@ ext/lwes_ext/lwes-0.23.1.tar.gz
 )
   s.rubyforge_project = 'lwes'
   s.test_files = s.files.grep(%r{\Atest/unit/test_})
+  s.add_development_dependency(%q<rake-compiler>, [">= 0.7.6"])
 end
