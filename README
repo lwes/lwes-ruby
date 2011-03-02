@@ -1,7 +1,7 @@
-= LWES - Light Weight Event System API for Ruby
+= LWES - Light Weight Event System bindings for Ruby
 
 * http://www.lwes.org
-* http://sourceforge.net/projects/lwes
+* git://rubyforge.org/lwes.git
 
 == DESCRIPTION:
 
@@ -23,13 +23,16 @@ may support listening and journaling capabilities as time allows.
 
 == SUPPORT:
 
-See the SourceForge project.
+Email the author: mailto:erik.s.chang@gmail.com and expect a response
+within 72 hours.
 
 == DEVELOPMENT:
 
-Our SVN repository is here:
+Our git repository is here:
 
-  https://lwes.svn.sourceforge.net/svnroot/lwes/lwes-ruby
+  git clone git://rubyforge.org/lwes.git
+
+Email pull requests or patches to the the author mailto:erik.s.chang@gmail.com
 
 == INSTALL:
 
@@ -40,42 +43,9 @@ gem.
 
   gem install lwes
 
-== SYNOPSIS:
+== SYNOPSIS
 
-  require 'lwes'
-
-  # create an Emitter which may be used for the lifetime of your process
-  emitter = LWES::Emitter.new(:address => '224.1.1.11',
-                              :port => 12345,
-                              :heartbeat => 30, # nil to disable
-                              :ttl => 1) # nil for default TTL(3)
-
-  # parse your ESF file at startup, the example below assumes you
-  # have "Event1" and "Event2" defined in your ESF file:
-  type_db = LWES::TypeDB.new("my_events.esf")
-
-  # create classes to use, by default and to encourage DRY-ness,
-  # we map each event in the ESF file to a class
-  # Optionally, you may specify :parent => module/namespace
-  type_db.create_classes! :parent => MyApp
-
-  # inside your application, you may now do this to slowly build up
-  # fields for the event
-  my_event = MyApp::Event1.new
-  my_event.started = Time.now.to_i
-  my_event.remote_addr = "192.168.0.1"
-  # ...do a lot of stuff here in between...
-  my_event.field1 = value1
-  my_event.field2 = value2
-  my_event.field3 = value3
-  my_event.finished = Time.now.to_i
-  emitter << my_event
-
-  # Alternatively, if you know ahead of time all the fields you want to
-  # set for an event, you can emit an event in one step:
-
-  emitter.emit MyApp::Event2, :field1 => value1, :field2 => value2 # ...
-
+See link:LWES.html
 
 == NON-ESF USERS:
 
