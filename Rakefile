@@ -1,4 +1,5 @@
 require 'rake/testtask'
+task :default => :test
 
 desc "run all tests"
 task :test => %w(test:unit)
