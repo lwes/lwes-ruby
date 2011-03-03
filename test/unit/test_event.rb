@@ -123,4 +123,25 @@ class TestEvent < Test::Unit::TestCase
     c = a.dup
     assert_equal "HELLO", c.t_string
   end
+
+  def test_emit_receive_subclassed
+    receiver = UDPSocket.new
+    receiver.bind(nil, @options[:port])
+    emitter = LWES::Emitter.new(@options)
+    tmp = { :t_string => 'hello' }
+
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
+    ev1 = LWES::Event.subclass "Event1", tdb
+    emitter.emit "Event1", tmp
+    buf, _ = receiver.recvfrom(65536)
+    parsed = LWES::Event.parse(buf)
+    assert_instance_of ev1, parsed
+    assert_equal parsed.to_hash, ev1.new(tmp).to_hash
+    ensure
+      receiver.close
+  end
+
+  def teardown
+    LWES::Event::CLASSES.clear
+  end
 end

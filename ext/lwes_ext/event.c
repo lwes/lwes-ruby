@@ -1,7 +1,8 @@
 #include "lwes_ruby.h"
 VALUE cLWES_Event;
 
-static VALUE SYM2ATTR;
+static VALUE tmp_class_name;
+static VALUE SYM2ATTR, CLASSES;
 static ID id_TYPE_DB, id_NAME;
 static VALUE sym_name;
 static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr);
@@ -55,18 +56,6 @@ static struct lwes_event_type_db * get_type_db(VALUE self)
 	VALUE type_db = rb_const_get(CLASS_OF(self), id_TYPE_DB);
 
 	return lwesrb_get_type_db(type_db);
-}
-
-static VALUE event_init(int argc, VALUE *argv, VALUE self)
-{
-	VALUE hash;
-	struct lwes_event *event;
-
-	rb_scan_args(argc, argv, "01", &hash);
-
-	Data_Get_Struct(self, struct lwes_event, event);
-
-	return self;
 }
 
 static LWES_BYTE get_attr_type(VALUE self, char *attr)
@@ -207,8 +196,7 @@ static VALUE to_hash(VALUE self)
  */
 static VALUE parse(VALUE self, VALUE buf)
 {
-	VALUE event = event_alloc(cLWES_Event);
-	struct lwes_event *e = lwesrb_get_event(event);
+	struct lwes_event *e;
 	struct lwes_event_deserialize_tmp dtmp;
 	LWES_BYTE_P bytes;
 	size_t num_bytes;
@@ -217,11 +205,25 @@ static VALUE parse(VALUE self, VALUE buf)
 	StringValue(buf);
 	bytes = (LWES_BYTE_P)RSTRING_PTR(buf);
 	num_bytes = (size_t)RSTRING_LEN(buf);
+	e = lwes_event_create_no_name(NULL);
 	rc = lwes_event_from_bytes(e, bytes, num_bytes, 0, &dtmp);
-	if (rc < 0)
+	if (rc < 0) {
+		lwes_event_destroy(e);
 		rb_raise(rb_eRuntimeError,
 		         "failed to parse LWES event (code: %d)", rc);
-	return event;
+	}
+	if (e->eventName) {
+		long len = strlen(e->eventName);
+		VALUE tmp;
+
+		rb_str_resize(tmp_class_name, len);
+		memcpy(RSTRING_PTR(tmp_class_name), e->eventName, len);
+		tmp = rb_hash_aref(CLASSES, tmp_class_name);
+		if (tmp != Qnil)
+			self = tmp;
+	}
+
+	return Data_Wrap_Struct(self, NULL, event_free, e);
 }
 
 VALUE lwesrb_event_to_hash(struct lwes_event *e)
@@ -261,12 +263,14 @@ void lwesrb_init_event(void)
 	cLWES_Event = rb_define_class_under(mLWES, "Event", rb_cObject);
 
 	SYM2ATTR = rb_const_get(cLWES_Event, rb_intern("SYM2ATTR"));
-	rb_define_private_method(cLWES_Event, "initialize", event_init, -1);
+	CLASSES = rb_const_get(cLWES_Event, rb_intern("CLASSES"));
 	rb_define_alloc_func(cLWES_Event, event_alloc);
 	rb_define_singleton_method(cLWES_Event, "parse", parse, 1);
 	rb_define_method(cLWES_Event, "to_hash", to_hash, 0);
 	rb_define_method(cLWES_Event, "[]", event_aref, 1);
 	rb_define_method(cLWES_Event, "[]=", event_aset, 2);
+	tmp_class_name = rb_str_new(0, 0);
+	rb_global_variable(&tmp_class_name);
 
 	LWESRB_MKID(TYPE_DB);
 	LWESRB_MKID(NAME);
