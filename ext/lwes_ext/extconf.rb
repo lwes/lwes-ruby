@@ -41,14 +41,14 @@ end
 unless have_library('lwes') && have_header('lwes.h')
   warn "LWES library not found, building locally"
   sub_cd(pwd) do
-    unless test ?r, tgz
+    unless File.readable?(tgz)
       response = fetch(url)
       File.open("#{tgz}.#{$$}.#{rand}.tmp", "wb") do |fp|
         fp.write(response.body)
         File.rename(fp.path, tgz)
       end
     end
-    unless test ?r, "#{inst}/.ok"
+    unless File.readable?("#{inst}/.ok")
       FileUtils.rm_rf(dir)
       system('tar', 'zxf', tgz) or abort "tar failed with #{$?}"
       sub_cd(dir) do

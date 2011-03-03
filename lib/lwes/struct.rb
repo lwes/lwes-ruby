@@ -30,7 +30,7 @@ module LWES
       db ||= begin
         file = options[:file] or
           raise ArgumentError, "TypeDB :db or ESF :file missing"
-        test ?r, file or
+        File.readable?(file) or
           raise ArgumentError, "file #{file.inspect} not readable"
         TypeDB.new(file)
       end

@@ -37,11 +37,6 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off);
 #  define RARRAY_LEN(s) (RARRAY(s)->len)
 #endif
 
-#ifndef RSTRUCT_PTR
-#  define RSTRUCT_PTR(s) (RSTRUCT(s)->ptr)
-#  define RSTRUCT_LEN(s) (RSTRUCT(s)->len)
-#endif
-
 #define RAISE_INSPECT(v) RSTRING_PTR(raise_inspect = rb_inspect(v))
 
 extern VALUE cLWES_Event;

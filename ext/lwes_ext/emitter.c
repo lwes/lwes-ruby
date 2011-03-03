@@ -93,6 +93,11 @@ static VALUE rle_alloc(VALUE klass)
 	                        NULL, rle_free, rle);
 }
 
+struct hash_memo {
+	size_t off;
+	LWES_BYTE_P buf;
+};
+
 /*
  * kv - Array:
  *   key => String,
@@ -104,13 +109,14 @@ static VALUE rle_alloc(VALUE klass)
 static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 {
 	volatile VALUE raise_inspect;
-	VALUE *tmp = (VALUE *)memo;
+	struct hash_memo *hash_memo = (struct hash_memo *)NUM2ULONG(memo);
 	VALUE val;
 	VALUE name;
 	char *attr_name;
 	int rv = 0;
-	LWES_BYTE_P buf = (LWES_BYTE_P)tmp[0];
-	size_t *off = (size_t *)tmp[1];
+	LWES_BYTE_P buf = hash_memo->buf;
+	size_t *off = &hash_memo->off;
+	VALUE *tmp;
 
 	if (TYPE(kv) != T_ARRAY || RARRAY_LEN(kv) != 2)
 		rb_raise(rb_eTypeError,
@@ -153,25 +159,24 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 {
 	struct _rb_lwes_emitter *rle = _rle(self);
-	LWES_BYTE_P buf = rle->emitter->buffer;
-	VALUE tmp[2];
-	size_t off = 0;
+	struct hash_memo hash_memo;
+	LWES_BYTE_P buf;
+	size_t *off;
+	VALUE memo = ULONG2NUM((unsigned long)&hash_memo);
 	VALUE enc;
-	int size = NUM2INT(rb_funcall(event, id_size, 0, 0));
+	LWES_U_INT_16 size = lwesrb_uint16(rb_funcall(event, id_size, 0, 0));
 	int rv;
 	char *event_name = StringValueCStr(name);
 
-	tmp[0] = (VALUE)buf;
-	tmp[1] = (VALUE)&off;
-
-	if (size < 0 || size > UINT16_MAX)
-		rb_raise(rb_eRangeError, "hash size out of uint16 range");
+	buf = hash_memo.buf = rle->emitter->buffer;
+	hash_memo.off = 0;
+	off = &hash_memo.off;
 
 	/* event name first */
-	dump_name(event_name, buf, &off);
+	dump_name(event_name, buf, off);
 
 	/* number of attributes second */
-	rv = marshall_U_INT_16((LWES_U_INT_16)size, buf, MAX_MSG_SIZE, &off);
+	rv = marshall_U_INT_16(size, buf, MAX_MSG_SIZE, off);
 	if (rv <= 0)
 		rb_raise(rb_eRuntimeError, "failed to dump num_attrs");
 
@@ -180,12 +185,12 @@ static VALUE emit_hash(VALUE self, VALUE name, VALUE event)
 	if (NIL_P(enc))
 		enc = rb_hash_aref(event, ENC);
 	if (! NIL_P(enc))
-		dump_enc(enc, buf, &off);
+		dump_enc(enc, buf, off);
 
 	/* the rest of the fields */
-	rb_iterate(rb_each, event, event_hash_iter_i, (VALUE)&tmp);
+	rb_iterate(rb_each, event, event_hash_iter_i, memo);
 
-	if (lwes_emitter_emit_bytes(rle->emitter, buf, off) < 0)
+	if (lwes_emitter_emit_bytes(rle->emitter, buf, *off) < 0)
 		rb_raise(rb_eRuntimeError, "failed to emit event");
 
 	return event;
@@ -243,6 +248,19 @@ static void lwes_struct_class(
 	*have_enc = rb_const_get(*event_class, id_HAVE_ENCODING);
 }
 
+#if !defined(RSTRUCT_PTR) && defined(RSTRUCT)
+#  define RSTRUCT_PTR(s) (RSTRUCT(s)->ptr)
+#endif
+static VALUE * rstruct_ptr(VALUE *ary, VALUE rstruct)
+{
+#ifdef RSTRUCT_PTR
+	return RSTRUCT_PTR(*ary = rstruct);
+#else
+	*ary = rb_funcall(rstruct, rb_intern("to_a"), 0, 0);
+	return RARRAY_PTR(*ary);
+#endif
+}
+
 static VALUE emit_struct(VALUE self, VALUE event)
 {
 	VALUE event_class, name, type_list, have_enc;
@@ -278,7 +296,7 @@ static VALUE emit_struct(VALUE self, VALUE event)
 	}
 
 	i = RARRAY_LEN(type_list);
-	flds = RSTRUCT_PTR(event);
+	flds = rstruct_ptr(&name, event);
 	tmp = RARRAY_PTR(type_list);
 	for (; --i >= 0; tmp++, flds++) {
 		/* inner: [ :field_sym, "field_name", type ] */

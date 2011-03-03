@@ -16,7 +16,7 @@ unless defined?(LISTENER_DEFAULTS)
 end
 
 private_bin = "ext/lwes_ext/.inst/bin"
-if test ?d, private_bin
+if File.directory? private_bin
   ENV['PATH'] = "#{private_bin}:#{ENV['PATH']}"
 end
 
