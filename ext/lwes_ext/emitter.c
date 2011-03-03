@@ -14,19 +14,9 @@ static void dump_name(char *name, LWES_BYTE_P buf, size_t *off)
 
 static int dump_bool(char *name, VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	LWES_BOOLEAN tmp = FALSE;
-
-	if (val == Qtrue) {
-		tmp = TRUE;
-	} else if (val != Qfalse) {
-		volatile VALUE raise_inspect;
-
-		rb_raise(rb_eTypeError, "non-boolean set for %s: %s",
-			 name, RAISE_INSPECT(val));
-	}
 	dump_name(name, buf, off);
 	lwesrb_dump_type(LWES_BOOLEAN_TOKEN, buf, off);
-	return marshall_BOOLEAN(tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_BOOLEAN(lwesrb_boolean(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_string(char *name, VALUE val, LWES_BYTE_P buf, size_t *off)

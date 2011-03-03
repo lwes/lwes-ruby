@@ -1,8 +1,10 @@
 #include "lwes_ruby.h"
 VALUE cLWES_Event;
 
+static VALUE SYM2ATTR;
 static ID id_TYPE_DB, id_NAME;
 static VALUE sym_name;
+static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr);
 
 struct lwes_event * lwesrb_get_event(VALUE self)
 {
@@ -48,25 +50,11 @@ static VALUE event_alloc(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, event_free, e);
 }
 
-/*
- * kv - Array:
- *   key => String,
- *   key => [ numeric_type, Numeric ],
- *   key => true,
- *   key => false,
- * memo - lwes_event pointer
- */
-static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
-{
-	/* TODO */
-}
-
 static struct lwes_event_type_db * get_type_db(VALUE self)
 {
 	VALUE type_db = rb_const_get(CLASS_OF(self), id_TYPE_DB);
-	struct lwes_event_type_db *tdb = lwesrb_get_type_db(type_db);
 
-	return tdb;
+	return lwesrb_get_type_db(type_db);
 }
 
 static VALUE event_init(int argc, VALUE *argv, VALUE self)
@@ -81,11 +69,10 @@ static VALUE event_init(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-static VALUE event_aset(VALUE self, VALUE key, VALUE val)
+static LWES_BYTE get_attr_type(VALUE self, char *attr)
 {
 	struct lwes_event_type_db *tdb = get_type_db(self);
 	struct lwes_event *e = lwesrb_get_event(self);
-	const char *attr = StringValueCStr(key);
 	struct lwes_hash *ehash = lwes_hash_get(tdb->events, e->eventName);
 	LWES_BYTE *attr_type;
 
@@ -93,11 +80,67 @@ static VALUE event_aset(VALUE self, VALUE key, VALUE val)
 		rb_raise(rb_eArgError, "invalid event: %s", e->eventName);
 
 	attr_type = lwes_hash_get(ehash, attr);
-	if (attr_type == NULL)
-		rb_raise(rb_eArgError, "invalid attribute: %s", attr);
+	if (attr_type)
+		return *attr_type;
 
-	switch (*attr_type) {
+	ehash = lwes_hash_get(tdb->events, LWES_META_INFO_STRING);
+	if (ehash == NULL)
+		rb_raise(rb_eArgError, "%s not found", LWES_META_INFO_STRING);
+
+	attr_type = lwes_hash_get(ehash, attr);
+	if (attr_type)
+		return *attr_type;
+
+	rb_raise(rb_eArgError, "invalid attribute: %s", attr);
+}
+
+static char *key2attr(VALUE key)
+{
+	if (TYPE(key) == T_SYMBOL)
+		key = rb_hash_aref(SYM2ATTR, key);
+	return StringValueCStr(key);
+}
+
+static VALUE event_aref(VALUE self, VALUE key)
+{
+	char *attr = key2attr(key);
+	struct lwes_event *e = lwesrb_get_event(self);
+	struct lwes_event_attribute *eattr;
+
+	eattr = lwes_hash_get(e->attributes, attr);
+	return eattr ? lwesrb_attr_to_value(eattr) : Qnil;
+}
+
+static VALUE event_aset(VALUE self, VALUE key, VALUE val)
+{
+	char *attr = key2attr(key);
+	LWES_BYTE attr_type = get_attr_type(self, attr);
+	struct lwes_event *e = lwesrb_get_event(self);
+
+	if (attr_type == LWES_STRING_TOKEN) {
+		lwes_event_set_STRING(e, attr, StringValueCStr(val));
+	} else if (attr_type == LWES_U_INT_16_TOKEN) {
+		lwes_event_set_U_INT_16(e, attr, lwesrb_uint16(val));
+	} else if (attr_type == LWES_INT_16_TOKEN) {
+		lwes_event_set_INT_16(e, attr, lwesrb_int16(val));
+	} else if (attr_type == LWES_U_INT_32_TOKEN) {
+		lwes_event_set_U_INT_32(e, attr, lwesrb_uint32(val));
+	} else if (attr_type == LWES_INT_32_TOKEN) {
+		lwes_event_set_INT_32(e, attr, lwesrb_int32(val));
+	} else if (attr_type == LWES_U_INT_64_TOKEN) {
+		lwes_event_set_U_INT_64(e, attr, lwesrb_uint64(val));
+	} else if (attr_type == LWES_INT_64_TOKEN) {
+		lwes_event_set_INT_64(e, attr, lwesrb_int64(val));
+	} else if (attr_type == LWES_IP_ADDR_TOKEN) {
+		lwes_event_set_IP_ADDR(e, attr, lwesrb_ip_addr(val));
+	} else if (attr_type == LWES_BOOLEAN_TOKEN) {
+		lwes_event_set_BOOLEAN(e, attr, lwesrb_boolean(val));
+	} else {
+		rb_raise(rb_eRuntimeError,
+			 "unknown LWES attribute type: 0x%02x",
+			 (unsigned)attr_type);
 	}
+	return val;
 }
 
 static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr)
@@ -131,6 +174,8 @@ static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr)
 		rb_str_set_len(str, strlen(name));
 		return str;
 	} else {
+		rb_warn("possible event corruption: attr->type=%02x",
+		        (unsigned)attr->type);
 		/*
 		 * possible event corruption
 		 * skip it like the C library does ...
@@ -199,6 +244,9 @@ VALUE lwesrb_event_to_hash(struct lwes_event *e)
 		name = lwes_hash_enumeration_next_element(&hen);
 		sym_attr_name = ID2SYM(rb_intern(name));
 		attr = lwes_hash_get(e->attributes, name);
+		if (attr == NULL)
+			rb_raise(rb_eRuntimeError,
+			         "missing attr during enumeration: %s", name);
 		val = lwesrb_attr_to_value(attr);
 		if (! NIL_P(val))
 			rb_hash_aset(rv, sym_attr_name, val);
@@ -212,10 +260,13 @@ void lwesrb_init_event(void)
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_Event = rb_define_class_under(mLWES, "Event", rb_cObject);
 
-	rb_define_method(cLWES_Event, "initialize", event_init, -1);
+	SYM2ATTR = rb_const_get(cLWES_Event, rb_intern("SYM2ATTR"));
+	rb_define_private_method(cLWES_Event, "initialize", event_init, -1);
 	rb_define_alloc_func(cLWES_Event, event_alloc);
 	rb_define_singleton_method(cLWES_Event, "parse", parse, 1);
 	rb_define_method(cLWES_Event, "to_hash", to_hash, 0);
+	rb_define_method(cLWES_Event, "[]", event_aref, 1);
+	rb_define_method(cLWES_Event, "[]=", event_aset, 2);
 
 	LWESRB_MKID(TYPE_DB);
 	LWESRB_MKID(NAME);
