@@ -55,7 +55,8 @@ LWES_INT_16 lwesrb_int16(VALUE val);
 LWES_U_INT_32 lwesrb_uint32(VALUE val);
 LWES_INT_32 lwesrb_int32(VALUE val);
 LWES_U_INT_64 lwesrb_uint64(VALUE val);
-LWES_INT_64 lwesrb_int64(VALUE val);
+/* NUM2LL can raise RangeError */
+#define lwesrb_int64(VAL) (LWES_INT_64)NUM2LL((VAL))
 LWES_IP_ADDR lwesrb_ip_addr(VALUE val);
 LWES_BOOLEAN lwesrb_boolean(VALUE val);
 

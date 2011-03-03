@@ -10,40 +10,44 @@ void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off)
 LWES_U_INT_16 lwesrb_uint16(VALUE val)
 {
 	int32_t tmp = NUM2INT(val);
-	if (tmp < 0)
-		rb_raise(rb_eRangeError, ":uint16 negative: %d", tmp);
-	if (tmp > UINT16_MAX)
-		rb_raise(rb_eRangeError, ":uint16 too large: %d", tmp);
+
+	if (tmp != (LWES_U_INT_16)tmp) {
+		const char *s = tmp < 0 ? "negative" : "too big";
+		rb_raise(rb_eRangeError, ":uint16 %s: %d", s, tmp);
+	}
 	return (LWES_U_INT_16)tmp;
 }
 
 LWES_INT_16 lwesrb_int16(VALUE val)
 {
 	int32_t tmp = NUM2INT(val);
-	if (tmp > INT16_MAX)
-		rb_raise(rb_eRangeError, ":int16 too large: %d", tmp);
-	if (tmp < INT16_MIN)
-		rb_raise(rb_eRangeError, ":int16 too small: %d", tmp);
+
+	if (tmp != (LWES_INT_16)tmp) {
+		const char *s = tmp < 0 ? "small" : "big";
+		rb_raise(rb_eRangeError, ":int16 too %s: %d", s, tmp);
+	}
 	return (LWES_INT_16)tmp;
 }
 
 LWES_U_INT_32 lwesrb_uint32(VALUE val)
 {
 	LONG_LONG tmp = NUM2LL(val);
-	if (tmp < 0)
-		rb_raise(rb_eRangeError, ":uint32 negative: %lli", tmp);
-	if (tmp > UINT32_MAX)
-		rb_raise(rb_eRangeError, ":uint32 too large: %lli", tmp);
+
+	if (tmp != (LWES_U_INT_32)tmp) {
+		const char *s = tmp < 0 ? "negative" : "too big";
+		rb_raise(rb_eRangeError, ":uint32 %s: %lli", s, tmp);
+	}
 	return (LWES_U_INT_32)tmp;
 }
 
 LWES_INT_32 lwesrb_int32(VALUE val)
 {
 	LONG_LONG tmp = NUM2LL(val);
-	if (tmp > INT32_MAX)
-		rb_raise(rb_eRangeError, ":int32 too large: %lli", tmp);
-	if (tmp < INT32_MIN)
-		rb_raise(rb_eRangeError, ":int32 too small: %lli", tmp);
+
+	if (tmp != (LWES_INT_32)tmp) {
+		const char *s = tmp < 0 ? "small" : "big";
+		rb_raise(rb_eRangeError, ":int32 too %s: %lli", s, tmp);
+	}
 	return (LWES_INT_32)tmp;
 }
 
@@ -60,12 +64,6 @@ LWES_U_INT_64 lwesrb_uint64(VALUE val)
 		         RAISE_INSPECT(val));
 	}
 	return (LWES_U_INT_64)tmp;
-}
-
-LWES_INT_64 lwesrb_int64(VALUE val)
-{
-	LONG_LONG tmp = NUM2LL(val); /* can raise RangeError */
-	return (LWES_INT_64)tmp;
 }
 
 LWES_IP_ADDR lwesrb_ip_addr(VALUE val)
