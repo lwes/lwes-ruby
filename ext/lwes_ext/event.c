@@ -208,6 +208,22 @@ static VALUE to_hash(VALUE self)
 	return rv;
 }
 
+VALUE lwesrb_wrap_event(VALUE klass, struct lwes_event *e)
+{
+	if (e->eventName) {
+		long len = strlen(e->eventName);
+		VALUE tmp;
+
+		rb_str_resize(tmp_class_name, len);
+		memcpy(RSTRING_PTR(tmp_class_name), e->eventName, len);
+		tmp = rb_hash_aref(CLASSES, tmp_class_name);
+		if (tmp != Qnil)
+			klass = tmp;
+	}
+
+	return Data_Wrap_Struct(klass, NULL, event_free, e);
+}
+
 /*
  * call-seq:
  *
@@ -237,18 +253,8 @@ static VALUE parse(VALUE self, VALUE buf)
 		rb_raise(rb_eRuntimeError,
 		         "failed to parse LWES event (code: %d)", rc);
 	}
-	if (e->eventName) {
-		long len = strlen(e->eventName);
-		VALUE tmp;
 
-		rb_str_resize(tmp_class_name, len);
-		memcpy(RSTRING_PTR(tmp_class_name), e->eventName, len);
-		tmp = rb_hash_aref(CLASSES, tmp_class_name);
-		if (tmp != Qnil)
-			self = tmp;
-	}
-
-	return Data_Wrap_Struct(self, NULL, event_free, e);
+	return lwesrb_wrap_event(self, e);
 }
 
 void lwesrb_init_event(void)

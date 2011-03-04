@@ -44,5 +44,6 @@ module LWES
   autoload :Struct, "lwes/struct"
   autoload :Emitter, "lwes/emitter"
   autoload :Event, "lwes/event"
+  autoload :Listener, "lwes/listener"
 end
 require "lwes_ext"

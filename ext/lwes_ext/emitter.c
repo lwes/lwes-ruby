@@ -37,7 +37,7 @@ static int dump_string(char *name, VALUE val, LWES_BYTE_P buf, size_t *off)
 
 static void dump_enc(VALUE enc, LWES_BYTE_P buf, size_t *off)
 {
-	dump_name(LWES_ENCODING, buf, off);
+	dump_name((char *)LWES_ENCODING, buf, off);
 	lwesrb_dump_num(LWES_INT_16_TOKEN, enc, buf, off);
 }
 

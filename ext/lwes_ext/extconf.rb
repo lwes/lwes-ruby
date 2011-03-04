@@ -2,6 +2,7 @@ require 'net/http'
 require 'mkmf'
 require 'fileutils'
 dir_config('lwes')
+have_func('rb_thread_blocking_region', 'ruby.h')
 
 pwd = File.expand_path(File.dirname(__FILE__))
 v = '0.23.1'

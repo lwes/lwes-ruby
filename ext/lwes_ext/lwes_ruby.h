@@ -21,6 +21,10 @@ void lwesrb_init_numeric(void);
 
 void lwesrb_init_event(void);
 
+void lwesrb_init_listener(void);
+
+VALUE lwesrb_wrap_event(VALUE klass, struct lwes_event *e);
+
 void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off);
 
 void lwesrb_dump_num(LWES_BYTE type, VALUE val, LWES_BYTE_P buf, size_t *off);
