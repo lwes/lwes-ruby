@@ -1,22 +1,32 @@
-# this class is incomplete, but will eventually be subclassable
-# like Struct in Ruby
+# Used for mapping LWES events in in an ESF file to a Ruby object.
+# LWES::Event-derived classes are more memory efficient if your event
+# definitions have many unused fields.
+#
+# LWES::TypeDB.create_classes! with +:sparse+ set to +true+
 class LWES::Event
   SYM2ATTR = Hash.new { |h,k| h[k] = k.to_s.freeze } # :nodoc:
-  CLASSES = {} # :nodoc:
 
-  def self.subclass(name, type_db)
-    klass = Class.new(self)
-    klass.const_set :TYPE_DB, type_db
-    name = klass.const_set :NAME, name.to_s.dup.freeze
-    dump = type_db.to_hash
+  # used to cache classes for LWES::Event.parse
+  CLASSES = {} # :nodoc:
+  extend LWES::ClassMaker
+
+  def self.subclass(options, &block)
+    db = type_db(options)
+    dump = db.to_hash
+    klass, name, event_def = class_for(options, dump)
+    tmp = Class.new(self)
+    set_constants(tmp, db, klass, name, options)
+    tmp.class_eval(&block) if block_given?
+
     meta = dump[:MetaEventInfo] || []
-    methods = meta + dump[name.to_sym]
+    methods = meta + event_def
     methods = methods.inject("") do |str, (k,_)|
       str << "def #{k}; self[:#{k}]; end\n"
       str << "def #{k}= val; self[:#{k}] = val; end\n"
     end
-    klass.class_eval methods
-    CLASSES[name] = klass
+    methods << "def initialize(src = nil); merge!(DEFAULTS); super; end\n"
+    tmp.class_eval methods
+    CLASSES[name] = tmp
   end
 
   def inspect

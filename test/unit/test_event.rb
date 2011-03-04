@@ -69,7 +69,7 @@ class TestEvent < Test::Unit::TestCase
 
   def test_subclass_aset_aref
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
-    tmp = LWES::Event.subclass "Event1", tdb
+    tmp = LWES::Event.subclass :name => "Event1", :db => tdb
     e = tmp.new
     assert_equal({}, e.to_hash)
     vals = {
@@ -106,14 +106,14 @@ class TestEvent < Test::Unit::TestCase
 
   def test_merge
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
-    tmp = LWES::Event.subclass "Event1", tdb
+    tmp = LWES::Event.subclass :name => "Event1", :db => tdb
     e = tmp.new.merge :t_string => "merged"
     assert_equal "merged", e.t_string
   end
 
   def test_init_copy
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
-    tmp = LWES::Event.subclass "Event1", tdb
+    tmp = LWES::Event.subclass :name => "Event1", :db => tdb
     a = tmp.new
     b = a.dup
     assert_equal a.to_hash, b.to_hash
@@ -131,7 +131,7 @@ class TestEvent < Test::Unit::TestCase
     tmp = { :t_string => 'hello' }
 
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
-    ev1 = LWES::Event.subclass "Event1", tdb
+    ev1 = LWES::Event.subclass :name => "Event1", :db => tdb
     emitter.emit "Event1", tmp
     buf, _ = receiver.recvfrom(65536)
     parsed = LWES::Event.parse(buf)
@@ -142,6 +142,8 @@ class TestEvent < Test::Unit::TestCase
   end
 
   def teardown
-    LWES::Event::CLASSES.clear
+    new_classes = LWES::Event::CLASSES
+    new_classes.each_key { |k| Object.__send__ :remove_const, k.to_sym }
+    new_classes.clear
   end
 end
