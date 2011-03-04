@@ -71,7 +71,7 @@ class TestEvent < Test::Unit::TestCase
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
     tmp = LWES::Event.subclass "Event1", tdb
     e = tmp.new
-    assert_equal({:name => "Event1"}, e.to_hash)
+    assert_equal({}, e.to_hash)
     vals = {
       :t_bool => true,
       :t_int16 => -1000,

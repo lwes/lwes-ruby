@@ -29,13 +29,7 @@ class LWES::Event
   end
 
   def merge! src
-    src.to_hash.each do |k,v|
-      begin
-        self[k] = v
-      rescue ArgumentError
-        raise if k != :name
-      end
-    end
+    src.to_hash.each { |k,v| self[k] = v }
     self
   end
 

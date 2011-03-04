@@ -179,8 +179,33 @@ static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr)
 static VALUE to_hash(VALUE self)
 {
 	struct lwes_event *e = lwesrb_get_event(self);
+	VALUE rv = rb_hash_new();
+	VALUE val;
+	struct lwes_hash_enumeration hen;
+	LWES_SHORT_STRING name;
+	VALUE sym_attr_name;
+	struct lwes_event_attribute *attr;
 
-	return lwesrb_event_to_hash(e);
+	if (e->eventName != NULL && CLASS_OF(self) == cLWES_Event) {
+		val = rb_str_new2(e->eventName);
+		rb_hash_aset(rv, sym_name, val);
+	}
+
+	if (! lwes_hash_keys(e->attributes, &hen))
+		return rv;
+	while (lwes_hash_enumeration_has_more_elements(&hen)) {
+		name = lwes_hash_enumeration_next_element(&hen);
+		sym_attr_name = ID2SYM(rb_intern(name));
+		attr = lwes_hash_get(e->attributes, name);
+		if (attr == NULL)
+			rb_raise(rb_eRuntimeError,
+			         "missing attr during enumeration: %s", name);
+		val = lwesrb_attr_to_value(attr);
+		if (! NIL_P(val))
+			rb_hash_aset(rv, sym_attr_name, val);
+	}
+
+	return rv;
 }
 
 /*
@@ -224,37 +249,6 @@ static VALUE parse(VALUE self, VALUE buf)
 	}
 
 	return Data_Wrap_Struct(self, NULL, event_free, e);
-}
-
-VALUE lwesrb_event_to_hash(struct lwes_event *e)
-{
-	VALUE rv = rb_hash_new();
-	VALUE val;
-	struct lwes_hash_enumeration hen;
-	LWES_SHORT_STRING name;
-	VALUE sym_attr_name;
-	struct lwes_event_attribute *attr;
-
-	if (e->eventName != NULL) {
-		val = rb_str_new2(e->eventName);
-		rb_hash_aset(rv, sym_name, val);
-	}
-
-	if (! lwes_hash_keys(e->attributes, &hen))
-		return rv;
-	while (lwes_hash_enumeration_has_more_elements(&hen)) {
-		name = lwes_hash_enumeration_next_element(&hen);
-		sym_attr_name = ID2SYM(rb_intern(name));
-		attr = lwes_hash_get(e->attributes, name);
-		if (attr == NULL)
-			rb_raise(rb_eRuntimeError,
-			         "missing attr during enumeration: %s", name);
-		val = lwesrb_attr_to_value(attr);
-		if (! NIL_P(val))
-			rb_hash_aset(rv, sym_attr_name, val);
-	}
-
-	return rv;
 }
 
 void lwesrb_init_event(void)

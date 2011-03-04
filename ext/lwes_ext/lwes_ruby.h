@@ -43,8 +43,6 @@ extern VALUE cLWES_Event;
 
 struct lwes_event * lwesrb_get_event(VALUE self);
 
-VALUE lwesrb_event_to_hash(struct lwes_event *e);
-
 LWES_U_INT_16 lwesrb_uint16(VALUE val);
 LWES_INT_16 lwesrb_int16(VALUE val);
 LWES_U_INT_32 lwesrb_uint32(VALUE val);
