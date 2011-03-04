@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name = %q{lwes}
-  s.version = "0.7.0"
+  s.version = "0.8.0pre1"
   s.date = Time.now
   s.authors = ["Erik S. Chang", "Frank Maritato"]
   s.email = %q{lwes-devel@lists.sourceforge.net}
-  s.summary = %q{Ruby API for the Light Weight Event System}
+  s.summary = %q{Ruby bindings for the Light Weight Event System}
   s.homepage = %q{http://lwes.rubyforge.org/}
   s.extensions = %w(ext/lwes_ext/extconf.rb)
   s.description = %q{

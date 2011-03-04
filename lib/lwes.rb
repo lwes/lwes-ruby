@@ -36,8 +36,8 @@
 #    emitter.emit MyApp::Event2, :field1 => value1, :field2 => value2 # ...
 #
 module LWES
-  # version of our library, currently 0.7.0
-  VERSION = "0.7.0"
+  # version of our library, currently 0.8.0pre1
+  VERSION = "0.8.0pre1"
 
   autoload :ClassMaker, "lwes/class_maker"
   autoload :TypeDB, "lwes/type_db"

@@ -1,3 +1,5 @@
+# :stopdoc:
+# internal class
 module LWES::ClassMaker
   def type_db(options)
     options[:db] || begin

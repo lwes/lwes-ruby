@@ -1,3 +1,7 @@
+Version 0.8.0pre1 (erik-s-chang)
+  * preliminary LWES::Listener support for Ruby 1.9 users
+  * LWES::Event enhancements and cleanups
+
 Version 0.7.0 (erik-s-chang)
   * rely on lwes-c 0.23.1 instead of patching 0.22.3
 
