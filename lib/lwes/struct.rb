@@ -118,7 +118,6 @@ end
 def []=(key, value)
   __aset(key.kind_of?(Fixnum) ? key : AREF_MAP[key], value)
 end
-end
 EOS
     fast_methods = []
     event_def.each_with_index do |(fld,_), idx|

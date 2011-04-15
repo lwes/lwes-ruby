@@ -1,0 +1,68 @@
+MetaEventInfo
+{
+  ip_addr SenderIP;
+}
+
+Monster
+{
+  boolean x01;
+  boolean x02;
+  boolean x03;
+  boolean x04;
+  boolean x05;
+  boolean x06;
+  boolean x07;
+  boolean x08;
+  boolean x09;
+  boolean x10;
+  boolean x11;
+  boolean x12;
+  boolean x13;
+  boolean x14;
+  boolean x15;
+  boolean x16;
+  boolean x17;
+  boolean x18;
+  boolean x19;
+  boolean x20;
+  boolean x21;
+  boolean x22;
+  boolean x23;
+  boolean x24;
+  boolean x25;
+  boolean x26;
+  boolean x27;
+  boolean x28;
+  boolean x29;
+  boolean x30;
+  boolean x31;
+  boolean x32;
+  boolean x33;
+  boolean x34;
+  boolean x35;
+  boolean x36;
+  boolean x37;
+  boolean x38;
+  boolean x39;
+  boolean x40;
+  boolean x41;
+  boolean x42;
+  boolean x43;
+  boolean x44;
+  boolean x45;
+  boolean x46;
+  boolean x47;
+  boolean x48;
+  boolean x49;
+  boolean x50;
+  boolean x51;
+  boolean x52;
+  boolean x53;
+  boolean x54;
+  boolean x55;
+  boolean x56;
+  boolean x57;
+  boolean x58;
+  boolean x59;
+  boolean x60;
+}
