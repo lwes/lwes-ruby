@@ -1,4 +1,7 @@
-Version 0.8.0pre1 (erik-s-chang)
+Version 0.8.1 (erik-s-chang)
+  * fix broken optimization for large (non-sparse) LWES::Structs
+
+Version 0.8.0 (erik-s-chang)
   * preliminary LWES::Listener support for Ruby 1.9 users
   * LWES::Event enhancements and cleanups
 
