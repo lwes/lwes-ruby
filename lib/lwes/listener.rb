@@ -15,7 +15,8 @@ class LWES::Listener
 
   alias clone dup
 
-  # process each LWES::Event object as it is received
+  # processes each LWES::Event object as it is received, yielding
+  # the LWES::Event to a given block
   def each
     begin
       yield recv

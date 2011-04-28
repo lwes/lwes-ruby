@@ -90,6 +90,14 @@ static char *key2attr(VALUE key)
 	return StringValueCStr(key);
 }
 
+/*
+ * call-seq:
+ *
+ *	event[key]	-> value
+ *
+ * Returns the +value+ stored with the +key+.  This will return +nil+ if
+ * +key+ does not exist.  +key+ must be a Symbol or String object
+ */
 static VALUE event_aref(VALUE self, VALUE key)
 {
 	char *attr = key2attr(key);
@@ -100,6 +108,14 @@ static VALUE event_aref(VALUE self, VALUE key)
 	return eattr ? lwesrb_attr_to_value(eattr) : Qnil;
 }
 
+/*
+ * call-seq:
+ *
+ *	event[key] = value
+ *
+ * Assigns +value+ to be stored in the event given by +key+.
+ * +key+ must be a String or Symbol object.
+ */
 static VALUE event_aset(VALUE self, VALUE key, VALUE val)
 {
 	char *attr = key2attr(key);
@@ -174,7 +190,13 @@ static VALUE lwesrb_attr_to_value(struct lwes_event_attribute *attr)
 }
 
 /*
- * Returns an LWES::Event object as a plain Ruby hash
+ * call-seq:
+ *
+ *	event.to_hash	-> Hash
+ *
+ * Returns an LWES::Event object as a plain Ruby hash.  Useful for
+ * interoperating with existing Ruby code and also when you don't
+ * have Event Specification Files finalized (or available).
  */
 static VALUE to_hash(VALUE self)
 {
@@ -227,13 +249,9 @@ VALUE lwesrb_wrap_event(VALUE klass, struct lwes_event *e)
 /*
  * call-seq:
  *
- *	receiver = UDPSocket.new
- *	receiver.bind(nil, 12345)
- *	buf, addr = receiver.recvfrom(65536)
- *	parsed = LWES::Event.parse(buf)
- *	parsed.to_hash -> hash
+ *	LWES::Event.parse(buffer)	-> LWES::Event
  *
- * Parses a string +buf+ and returns a new LWES::Event object
+ * Parses a string +buffer+ and returns a new LWES::Event object
  */
 static VALUE parse(VALUE self, VALUE buf)
 {

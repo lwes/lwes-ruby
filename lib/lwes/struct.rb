@@ -3,11 +3,18 @@
 #
 # LWES::Struct is may be more memory-efficient and faster if your application
 # uses all or most of the fields in the event definition.  LWES::Event should
-# be used in cases where many event fields are unused in a definition.
+# be used in cases where many event fields are unused in an event definition.
+#
+# LWES::Struct is created by LWES::TypeDB#create_classes! by default
+# where the +:sparse+ flag is +false+.  There is little need to use this
+# class directly.
 class LWES::Struct
   extend LWES::ClassMaker
 
-  # creates a new Struct-based class, takes the following
+  # There is usually no need to use this method,
+  # LWES::TypeDB.create_classes! will call this for you
+  #
+  # Creates a new Struct-based class, takes the following
   # options hash:
   #
   #   :db       - pre-created LWES::TypeDB object

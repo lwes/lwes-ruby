@@ -15,6 +15,13 @@ static VALUE tdb_alloc(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, tdb_free, NULL);
 }
 
+/*
+ * call-seq:
+ *
+ *	LWES::TypeDB.new("events.esf") -> LWES::TypeDB
+ *
+ * Initializes a new TypeDB object based on the path to a given ESF file.
+ */
 static VALUE tdb_init(VALUE self, VALUE path)
 {
 	struct lwes_event_type_db *db = DATA_PTR(self);
@@ -101,6 +108,7 @@ struct lwes_event_type_db * lwesrb_get_type_db(VALUE self)
 	return db;
 }
 
+/* :nodoc: */
 static VALUE tdb_to_hash(VALUE self)
 {
 	struct lwes_event_type_db *db = DATA_PTR(self);

@@ -2,7 +2,17 @@
 # LWES::Event-derived classes are more memory efficient if your event
 # definitions have many unused fields.
 #
-# LWES::TypeDB.create_classes! with +:sparse+ set to +true+
+# LWES::TypeDB.create_classes! with +:sparse+ set to +true+ will create
+# classes subclassed from LWES::Event instead of LWES::Struct.
+#
+# For users unable to use LWES::Listener, LWES::Event.parse may also be
+# used with UDPSocket (distributed with Ruby) to parse events:
+#
+#   receiver = UDPSocket.new
+#   receiver.bind(nil, port)
+#   buffer, addr = receiver.recvfrom(65536)
+#   event = LWES::Event.parse(buffer)
+
 class LWES::Event
   SYM2ATTR = Hash.new { |h,k| h[k] = k.to_s.freeze } # :nodoc:
 
@@ -10,6 +20,10 @@ class LWES::Event
   CLASSES = {} # :nodoc:
   extend LWES::ClassMaker
 
+  # There is no need to call this method directly.  use
+  # LWES::TypeDB.create_classes! with the +:sparse+ flag set to +true+.
+  #
+  # This takes the same options as LWES::Struct.new.
   def self.subclass(options, &block)
     db = type_db(options)
     dump = db.to_hash
@@ -29,6 +43,7 @@ class LWES::Event
     CLASSES[name] = tmp
   end
 
+  # returns a human-readable representation of the event
   def inspect
     klass = self.class
     if LWES::Event == klass
@@ -38,6 +53,7 @@ class LWES::Event
     end
   end
 
+  # overwrites the values of the existing event with those given in +src+
   def merge! src
     src.to_hash.each { |k,v| self[k] = v }
     self
@@ -45,12 +61,16 @@ class LWES::Event
 
   alias_method :initialize_copy, :merge!
 
+  # duplicates the given event and overwrites the copy with values given
+  # in +src+
   def merge src
     dup.merge! src
   end
 
 private
 
+  # Initializes a new LWES::Event.  If +src+ is given, it must be an
+  # LWES::Event or hash which the new event takes initial values from
   def initialize(src = nil)
     src and merge! src
   end

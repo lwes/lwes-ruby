@@ -338,10 +338,10 @@ static VALUE emit_event(VALUE self, VALUE event)
 }
 /*
  * call-seq:
- *   emitter = LWES::Emitter.new
- *   event = EventStruct.new
- *   event.foo = "bar"
  *   emitter << event
+ *
+ * Emits the given +event+ which much be an LWES::Event or
+ * LWES::Struct-derived object
  */
 static VALUE emitter_ltlt(VALUE self, VALUE event)
 {
@@ -356,15 +356,22 @@ static VALUE emitter_ltlt(VALUE self, VALUE event)
 
 /*
  * call-seq:
- *   emitter = LWES::Emitter.new
+ *	emitter.emit("EventName", :foo => "HI")
+ *	emitter.emit("EventName", :foo => [ :int32, 123 ])
+ *	emitter.emit(EventClass, :foo => "HI")
+ *	emitter.emit(event)
  *
- *   emitter.emit("EventName", :foo => "HI")
+ * Emits a hash.  If EventName is given as a string, it will expect a hash
+ * as its second argument and will do its best to serialize a Ruby Hash
+ * to an LWES Event.  If a type is ambiguous, a two-element array may be
+ * specified as its value, including the LWES type information and the
+ * Ruby value.
  *
- *   emitter.emit(EventStruct, :foo => "HI")
+ * If an EventClass is given, the second argument should be a hash with
+ * the values given to the class.   This will emit the event named by
+ * EventClass.
  *
- *   struct = EventStruct.new
- *   struct.foo = "HI"
- *   emitter.emit(struct)
+ * If only one argument is given, it behaves just like LWES::Emitter#<<
  */
 static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 {
@@ -412,6 +419,9 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *	emitter.close	-> nil
+ *
  * Destroys the associated lwes_emitter and the associated socket.  This
  * method is rarely needed as Ruby garbage collection will take care of
  * closing for you, but may be useful in odd cases when it is desirable
@@ -468,7 +478,7 @@ static VALUE init_copy(VALUE dest, VALUE obj)
 	return dest;
 }
 
-/* should only used internally by #initialize */
+/* :nodoc: should only used internally by #initialize */
 static VALUE _create(VALUE self, VALUE options)
 {
 	struct _rb_lwes_emitter *rle = _rle(self);
@@ -554,5 +564,10 @@ void lwesrb_init_emitter(void)
 	sym_enc = ID2SYM(id_enc);
 
 	ENC = rb_obj_freeze(rb_str_new2(LWES_ENCODING));
+
+	/*
+	 * the key in an LWES::Event to designate the encoding of
+	 * an event, currently "enc"
+	 */
 	rb_define_const(mLWES, "ENCODING", ENC);
 }
