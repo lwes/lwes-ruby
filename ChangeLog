@@ -1,3 +1,6 @@
+Version 0.8.2 (erik-s-chang)
+  * 100% RDoc coverage.
+
 Version 0.8.1 (erik-s-chang)
   * fix broken optimization for large (non-sparse) LWES::Structs
 
