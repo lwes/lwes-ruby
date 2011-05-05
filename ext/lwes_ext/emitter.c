@@ -1,4 +1,9 @@
 #include "lwes_ruby.h"
+#ifdef HAVE_RUBY_UTIL_H
+#  include <ruby/util.h>
+#else
+#  include "util.h"
+#endif
 
 static VALUE ENC; /* LWES_ENCODING */
 static ID id_TYPE_DB, id_TYPE_LIST, id_NAME, id_HAVE_ENCODING;
@@ -39,16 +44,6 @@ static void dump_enc(VALUE enc, LWES_BYTE_P buf, size_t *off)
 {
 	dump_name((char *)LWES_ENCODING, buf, off);
 	lwesrb_dump_num(LWES_INT_16_TOKEN, enc, buf, off);
-}
-
-static char *my_strdup(const char *str)
-{
-	long len = strlen(str) + 1;
-	char *rv = xmalloc(len);
-
-	memcpy(rv, str, len);
-
-	return rv;
 }
 
 /* the underlying struct for LWES::Emitter */
@@ -467,9 +462,9 @@ static VALUE init_copy(VALUE dest, VALUE obj)
 	struct _rb_lwes_emitter *src = _rle(obj);
 
 	memcpy(dst, src, sizeof(*dst));
-	dst->address = my_strdup(src->address);
+	dst->address = ruby_strdup(src->address);
 	if (dst->iface)
-		dst->iface = my_strdup(src->iface);
+		dst->iface = ruby_strdup(src->iface);
 	lwesrb_emitter_create(dst);
 
 	assert(dst->emitter && dst->emitter != src->emitter &&
@@ -496,7 +491,7 @@ static VALUE _create(VALUE self, VALUE options)
 	address = rb_hash_aref(options, ID2SYM(rb_intern("address")));
 	if (TYPE(address) != T_STRING)
 		rb_raise(rb_eTypeError, ":address must be a string");
-	rle->address = my_strdup(StringValueCStr(address));
+	rle->address = ruby_strdup(StringValueCStr(address));
 
 	iface = rb_hash_aref(options, ID2SYM(rb_intern("iface")));
 	switch (TYPE(iface)) {
@@ -504,7 +499,7 @@ static VALUE _create(VALUE self, VALUE options)
 		rle->iface = NULL;
 		break;
 	case T_STRING:
-		rle->iface = my_strdup(StringValueCStr(iface));
+		rle->iface = ruby_strdup(StringValueCStr(iface));
 		break;
 	default:
 		rb_raise(rb_eTypeError, ":iface must be a String or nil");
