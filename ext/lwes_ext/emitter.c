@@ -371,6 +371,7 @@ static VALUE emitter_ltlt(VALUE self, VALUE event)
 static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 {
 	volatile VALUE raise_inspect;
+	char *err;
 	VALUE name = Qnil;
 	VALUE event = Qnil;
 	argc = rb_scan_args(argc, argv, "11", &name, &event);
@@ -400,7 +401,15 @@ static VALUE emitter_emit(int argc, VALUE *argv, VALUE self)
 		 * struct created
 		 */
 		event = rb_funcall(name, id_new, 1, event);
-		return emit_struct(self, event);
+		if (TYPE(event) == T_STRUCT)
+			return emit_struct(self, event);
+		if (rb_obj_is_kind_of(event, cLWES_Event))
+			return emit_event(self, event);
+		name = rb_class_name(name);
+		err = StringValuePtr(name);
+		rb_raise(rb_eArgError,
+		         "%s created a bad event: %s",
+			 err, RAISE_INSPECT(event));
 	default:
 		if (rb_obj_is_kind_of(name, cLWES_Event))
 			return emit_event(self, name);
