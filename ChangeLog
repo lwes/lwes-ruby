@@ -1,3 +1,7 @@
+Version 0.8.3 (erik-s-chang)
+  * Emitter can auto-create+emit sparse LWES::Event objects in
+    addition to Struct-based objects.
+
 Version 0.8.2 (erik-s-chang)
   * 100% RDoc coverage.
 
