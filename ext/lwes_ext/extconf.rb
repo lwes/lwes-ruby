@@ -39,7 +39,7 @@ def fetch(uri_str, limit = 10)
   end
 end
 
-unless have_library('lwes') && have_header('lwes.h')
+unless have_header('lwes.h') && have_library('lwes')
   warn "LWES library not found, building locally"
   sub_cd(pwd) do
     unless File.readable?(tgz)
