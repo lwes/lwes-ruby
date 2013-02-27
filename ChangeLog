@@ -1,3 +1,6 @@
+Version 0.8.5 (erik-s-chang)
+  * Fix Ruby 2.0.0 compatibility
+
 Version 0.8.4 (erik-s-chang)
   * prevent -llwes in $LIBS when building local installation
 

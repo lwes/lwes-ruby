@@ -35,7 +35,7 @@ LWES_U_INT_32 lwesrb_uint32(VALUE val)
 
 	if (tmp != (LWES_U_INT_32)tmp) {
 		const char *s = tmp < 0 ? "negative" : "too big";
-		rb_raise(rb_eRangeError, ":uint32 %s: %lli", s, tmp);
+		rb_raise(rb_eRangeError, ":uint32 %s: %lld", s, tmp);
 	}
 	return (LWES_U_INT_32)tmp;
 }
@@ -46,7 +46,7 @@ LWES_INT_32 lwesrb_int32(VALUE val)
 
 	if (tmp != (LWES_INT_32)tmp) {
 		const char *s = tmp < 0 ? "small" : "big";
-		rb_raise(rb_eRangeError, ":int32 too %s: %lli", s, tmp);
+		rb_raise(rb_eRangeError, ":int32 too %s: %lld", s, tmp);
 	}
 	return (LWES_INT_32)tmp;
 }

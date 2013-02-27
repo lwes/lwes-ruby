@@ -60,14 +60,15 @@ class TestListener < Test::Unit::TestCase
   end
 
   def test_listen_each_signal
-    signaled = false
-    handler = trap(:USR1) { signaled = true }
+    pipe = IO.pipe
+    handler = trap(:USR1) { pipe[1].syswrite('.') }
     @listener = LWES::Listener.new @options
     @emitter = LWES::Emitter.new @options
     tmp = []
     thr = Thread.new do
       sleep 0.1
       Process.kill :USR1, $$
+      assert_equal '.', pipe[0].read(1)
       @emitter.emit("E1", :hello => "WORLD")
       :OK
     end
@@ -75,8 +76,9 @@ class TestListener < Test::Unit::TestCase
     assert thr.join
     assert_equal :OK, thr.value
     assert_equal 1, tmp.size
-    assert_equal "WORLD", tmp[0].to_hash[:hello]
+    assert_equal "WORLD", tmp[0].to_hash[:hello], tmp
     ensure
       trap(:USR1, handler)
+      pipe.each { |io| io.close }
   end
 end if LWES::Listener.method_defined?(:recv)

@@ -35,8 +35,13 @@ class TestEmitter < Test::Unit::TestCase
   end
 
   def test_initialize_with_heartbeat
+    l = LWES::Listener.new(@options)
     heartbeat = @options.merge(:heartbeat => 30)
-    assert_instance_of LWES::Emitter, LWES::Emitter.new(heartbeat)
+    e = LWES::Emitter.new(heartbeat)
+    assert_instance_of LWES::Emitter, e
+    assert_nil e.close
+    assert_instance_of LWES::Event, l.recv
+    assert_nil l.close
   end
 
   def test_initialize_no_ttl

@@ -138,10 +138,14 @@ static VALUE listener_recv(int argc, VALUE *argv, VALUE self)
 	args.event = lwes_event_create_no_name(NULL);
 	args.timeout_ms = NIL_P(timeout) ? UINT_MAX : NUM2UINT(timeout);
 
+retry:
 	saved_errno = errno = 0;
 	r = (int)rb_thread_blocking_region(recv_event, &args, RUBY_UBF_IO, 0);
 	if (r >= 0)
 		return lwesrb_wrap_event(cLWES_Event, args.event);
+
+	if (errno == EINTR)
+		goto retry;
 	saved_errno = errno;
 	(void)lwes_event_destroy(args.event);
 	if (r == -2 && ! NIL_P(timeout))
