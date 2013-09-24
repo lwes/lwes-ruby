@@ -2,3 +2,4 @@
 *.so
 *.log
 /tmp
+*.tar.gz
