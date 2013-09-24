@@ -19,4 +19,5 @@ data so that any platform or language can translate it to it's local dialect.
   s.rubyforge_project = 'lwes'
   s.test_files = s.files.grep(%r{\Atest/unit/test_})
   s.add_development_dependency(%q<rake-compiler>, [">= 0.7.6"])
+  s.license = "GPLv2+"
 end
