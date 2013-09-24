@@ -7,7 +7,7 @@
 
 static VALUE ENC; /* LWES_ENCODING */
 static ID id_TYPE_DB, id_TYPE_LIST, id_NAME, id_HAVE_ENCODING;
-static ID id_new, id_enc, id_size;
+static ID id_new, id_enc, id_size, id_to_a;
 static VALUE sym_enc;
 
 static void dump_name(char *name, LWES_BYTE_P buf, size_t *off)
@@ -111,13 +111,12 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 	int rv = 0;
 	LWES_BYTE_P buf = hash_memo->buf;
 	size_t *off = &hash_memo->off;
-	VALUE *tmp;
 
 	if (TYPE(kv) != T_ARRAY || RARRAY_LEN(kv) != 2)
 		rb_raise(rb_eTypeError,
 		         "hash iteration not giving key-value pairs");
-	tmp = RARRAY_PTR(kv);
-	name = tmp[0];
+
+	name = rb_ary_entry(kv, 0);
 
 	if (name == sym_enc) return Qnil; /* already dumped first */
 
@@ -127,7 +126,7 @@ static VALUE event_hash_iter_i(VALUE kv, VALUE memo)
 	if (strcmp(attr_name, LWES_ENCODING) == 0)
 		return Qnil;
 
-	val = tmp[1];
+	val = rb_ary_entry(kv, 1);
 
 	switch (TYPE(val)) {
 	case T_TRUE:
@@ -243,30 +242,15 @@ static void lwes_struct_class(
 	*have_enc = rb_const_get(*event_class, id_HAVE_ENCODING);
 }
 
-#if !defined(RSTRUCT_PTR) && defined(RSTRUCT)
-#  define RSTRUCT_PTR(s) (RSTRUCT(s)->ptr)
-#endif
-static VALUE * rstruct_ptr(VALUE *ary, VALUE rstruct)
-{
-#ifdef RSTRUCT_PTR
-	return RSTRUCT_PTR(*ary = rstruct);
-#else
-	*ary = rb_funcall(rstruct, rb_intern("to_a"), 0, 0);
-	return RARRAY_PTR(*ary);
-#endif
-}
-
 static VALUE emit_struct(VALUE self, VALUE event)
 {
-	VALUE event_class, name, type_list, have_enc;
+	VALUE event_class, name, type_list, have_enc, event_ary;
 	struct _rb_lwes_emitter *rle = _rle(self);
 	LWES_BYTE_P buf = rle->emitter->buffer;
 	size_t off = 0;
-	long i;
-	VALUE *tmp;
+	long i, len;
 	LWES_U_INT_16 num_attr = 0;
 	size_t num_attr_off;
-	VALUE *flds;
 	char *str;
 
 	lwes_struct_class(&event_class, &name, &type_list, &have_enc, event);
@@ -290,24 +274,26 @@ static VALUE emit_struct(VALUE self, VALUE event)
 		}
 	}
 
-	i = RARRAY_LEN(type_list);
-	flds = rstruct_ptr(&name, event);
-	tmp = RARRAY_PTR(type_list);
-	for (; --i >= 0; tmp++, flds++) {
-		/* inner: [ :field_sym, "field_name", type ] */
-		VALUE *inner = RARRAY_PTR(*tmp);
+	len = RARRAY_LEN(type_list);
+	event_ary = rb_funcall(event, id_to_a, 0, 0);
+	for (i = 0; i < len; i++) {
+		/* type_list [ [ :field_sym, "field_name", ltype ] ] */
+		VALUE tlent = rb_ary_entry(type_list, i);
+		VALUE field_sym = rb_ary_entry(tlent, 0);
+		VALUE field_name;
 		VALUE val;
 		LWES_TYPE type;
 
-		if (inner[0] == sym_enc) /* encoding was already dumped */
+		if (field_sym == sym_enc) /* encoding was already dumped */
 			continue;
 
-		val = *flds;
+		val = rb_ary_entry(event_ary, i);
 		if (NIL_P(val))
 			continue; /* LWES doesn't know nil */
 
-		str = StringValueCStr(inner[1]);
-		type = NUM2INT(inner[2]);
+		field_name = rb_ary_entry(tlent, 1);
+		str = StringValueCStr(field_name);
+		type = NUM2INT(rb_ary_entry(tlent, 2));
 		++num_attr;
 		marshal_field(str, type, val, buf, &off);
 	}
@@ -565,6 +551,7 @@ void lwesrb_init_emitter(void)
 	LWESRB_MKID(new);
 	LWESRB_MKID(size);
 	id_enc = rb_intern(LWES_ENCODING);
+	id_to_a = rb_intern("to_a");
 	sym_enc = ID2SYM(id_enc);
 
 	ENC = rb_obj_freeze(rb_str_new2(LWES_ENCODING));

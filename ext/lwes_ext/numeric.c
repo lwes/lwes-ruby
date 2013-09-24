@@ -111,7 +111,6 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 	volatile VALUE raise_inspect;
 	int i, rv;
 	struct _type_fn_map *head;
-	VALUE *ary;
 	ID type;
 
 	assert(TYPE(array) == T_ARRAY && "need array here");
@@ -119,15 +118,14 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 	if (RARRAY_LEN(array) != 2)
 		rb_raise(rb_eArgError, "expected a two element array");
 
-	ary = RARRAY_PTR(array);
-	type = ary[0];
+	type = rb_ary_entry(array, 0);
 
 	i = sizeof(type_fn_map) / sizeof(type_fn_map[0]);
 	for (head = type_fn_map; --i >= 0; head++) {
 		if (head->type != type)
 			continue;
 
-		rv = head->fn(ary[1], buf, off);
+		rv = head->fn(rb_ary_entry(array, 1), buf, off);
 		if (rv > 0)
 			return;
 

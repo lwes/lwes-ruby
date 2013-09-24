@@ -36,8 +36,7 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off);
 #  define RSTRING_LEN(s) (RSTRING(s)->len)
 #endif
 
-#ifndef RARRAY_PTR
-#  define RARRAY_PTR(s) (RARRAY(s)->ptr)
+#ifndef RARRAY_LEN
 #  define RARRAY_LEN(s) (RARRAY(s)->len)
 #endif
 
