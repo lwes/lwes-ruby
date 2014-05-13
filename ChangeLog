@@ -1,3 +1,6 @@
+Version 0.8.7 (erik-s-chang)
+  * Fix deprecation warnings on Ruby 2.1
+
 Version 0.8.6 (erik-s-chang)
   * Fix Ruby 2.1.0preview1 compatibility
 
