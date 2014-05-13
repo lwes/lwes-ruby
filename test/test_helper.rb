@@ -5,8 +5,8 @@ require 'lwes'
 GC.stress = true if ENV["GC_STRESS"].to_i != 0
 
 unless defined?(LISTENER_DEFAULTS)
-  BEFORE_DELAY = ENV['BEFORE_DELAY'] ? ENV['BEFORE_DELAY'].to_f : 0.5
-  AFTER_DELAY = ENV['AFTER_DELAY'] ? ENV['AFTER_DELAY'].to_f : 0.5
+  BEFORE_DELAY = ENV['BEFORE_DELAY'] ? ENV['BEFORE_DELAY'].to_f : 0.1
+  AFTER_DELAY = ENV['AFTER_DELAY'] ? ENV['AFTER_DELAY'].to_f : 0.1
   LISTENER_DEFAULTS = {
     :address => ENV["LWES_TEST_ADDRESS"] || "127.0.0.1",
     :iface => ENV["LWES_TEST_IFACE"] || "0.0.0.0",
