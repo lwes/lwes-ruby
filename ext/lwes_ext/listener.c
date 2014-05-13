@@ -1,4 +1,7 @@
 #include "lwes_ruby.h"
+#ifdef HAVE_RUBY_THREAD_H
+#include <ruby/thread.h>
+#endif
 #include <errno.h>
 
 static void listener_free(void *ptr)
@@ -116,7 +119,7 @@ static VALUE recv_event(void *ptr)
 	return (VALUE)r;
 }
 
-#ifdef HAVE_RB_THREAD_BLOCKING_REGION
+#if defined(HAVE_RB_THREAD_BLOCKING_REGION) || defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL)
 /*
  * call-seq:
  *	listener.recv => LWES::Event
@@ -140,7 +143,15 @@ static VALUE listener_recv(int argc, VALUE *argv, VALUE self)
 
 retry:
 	saved_errno = errno = 0;
+#ifdef HAVE_RB_THREAD_CALL_WITHOUT_GVL
+	{
+		long rlong = (long)rb_thread_call_without_gvl(
+			(void *(*)(void *))recv_event, &args, RUBY_UBF_IO, 0);
+		r = rlong;
+	}
+#else
 	r = (int)rb_thread_blocking_region(recv_event, &args, RUBY_UBF_IO, 0);
+#endif
 	if (r >= 0)
 		return lwesrb_wrap_event(cLWES_Event, args.event);
 
@@ -162,7 +173,7 @@ void lwesrb_init_listener(void)
 	VALUE cListener = rb_define_class_under(mLWES, "Listener", rb_cObject);
 	rb_define_alloc_func(cListener, listener_alloc);
 	rb_define_private_method(cListener, "initialize", listener_init, 1);
-#ifdef HAVE_RB_THREAD_BLOCKING_REGION
+#if defined(HAVE_RB_THREAD_BLOCKING_REGION) || defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL)
 	rb_define_method(cListener, "recv", listener_recv, -1);
 #endif
 	rb_define_method(cListener, "close", listener_close, 0);
