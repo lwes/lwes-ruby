@@ -1,7 +1,7 @@
 = LWES - Light Weight Event System bindings for Ruby
 
 * http://www.lwes.org
-* git://rubyforge.org/lwes.git
+* git://reality-escapes.me/git/lwes-ruby.git
 
 == DESCRIPTION:
 
@@ -23,16 +23,17 @@ may support listening and journaling capabilities as time allows.
 
 == SUPPORT:
 
-Email the author: mailto:erik.s.chang@gmail.com and expect a response
-within 72 hours.
+Email the author: Erik S. Chang mailto:esc@reality-escapes.me and expect a
+response within 72 hours.
 
 == DEVELOPMENT:
 
 Our git repository is here:
 
-  git clone git://rubyforge.org/lwes.git
+  git clone git://reality-escapes.me/git/lwes-ruby.git
 
-Email pull requests or patches to the the author mailto:erik.s.chang@gmail.com
+Email pull requests or patches to the the author
+mailto:esc@reality-escapes.me
 
 == INSTALL:
 

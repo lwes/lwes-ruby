@@ -14,14 +14,8 @@ end
 require "rake/extensiontask"
 Rake::ExtensionTask.new("lwes_ext")
 
-gem 'rdoc', '>= 3.5.3'
 require 'rdoc/task'
 RDoc::Task.new do |rd|
   rd.main = "README"
   rd.rdoc_files.include("README", "lib/**/*.rb", "ext/lwes_ext/*.c")
-end
-
-desc "update website"
-task :update_website => :rerdoc do
-  system 'rsync -avz html/ rubyforge.org:/var/www/gforge-projects/lwes/'
 end
