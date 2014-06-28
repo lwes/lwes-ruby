@@ -21,6 +21,10 @@ void lwesrb_init_numeric(void);
 
 void lwesrb_init_event(void);
 
+void lwesrb_init_listener(void);
+
+VALUE lwesrb_wrap_event(VALUE klass, struct lwes_event *e);
+
 void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off);
 
 void lwesrb_dump_num(LWES_BYTE type, VALUE val, LWES_BYTE_P buf, size_t *off);
@@ -32,14 +36,8 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off);
 #  define RSTRING_LEN(s) (RSTRING(s)->len)
 #endif
 
-#ifndef RARRAY_PTR
-#  define RARRAY_PTR(s) (RARRAY(s)->ptr)
+#ifndef RARRAY_LEN
 #  define RARRAY_LEN(s) (RARRAY(s)->len)
-#endif
-
-#ifndef RSTRUCT_PTR
-#  define RSTRUCT_PTR(s) (RSTRUCT(s)->ptr)
-#  define RSTRUCT_LEN(s) (RSTRUCT(s)->len)
 #endif
 
 #define RAISE_INSPECT(v) RSTRING_PTR(raise_inspect = rb_inspect(v))
@@ -48,6 +46,14 @@ extern VALUE cLWES_Event;
 
 struct lwes_event * lwesrb_get_event(VALUE self);
 
-VALUE lwesrb_event_to_hash(struct lwes_event *e);
+LWES_U_INT_16 lwesrb_uint16(VALUE val);
+LWES_INT_16 lwesrb_int16(VALUE val);
+LWES_U_INT_32 lwesrb_uint32(VALUE val);
+LWES_INT_32 lwesrb_int32(VALUE val);
+LWES_U_INT_64 lwesrb_uint64(VALUE val);
+/* NUM2LL can raise RangeError */
+#define lwesrb_int64(VAL) (LWES_INT_64)NUM2LL((VAL))
+LWES_IP_ADDR lwesrb_ip_addr(VALUE val);
+LWES_BOOLEAN lwesrb_boolean(VALUE val);
 
 #endif /* LWES_RUBY_H */

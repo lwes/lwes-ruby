@@ -68,10 +68,11 @@ class TestTypeDB < Test::Unit::TestCase
                 Abcde::A::B::C::Event::Bool
                 Abcde::A::B::C::Event::String)
     assert_equal expect, classes.map { |i| i.to_s }
+    Abcde.__send__ :remove_const, :A
   end
 
-  def test_invalid_file_arg_error
-    assert_raises(ArgumentError) { LWES::TypeDB.new(nil) }
+  def test_invalid_file_type_error
+    assert_raises(TypeError) { LWES::TypeDB.new(nil) }
   end
 
   def test_empty_struct_ok
@@ -81,6 +82,6 @@ class TestTypeDB < Test::Unit::TestCase
     tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/meta_only.esf")
     classes = tdb.create_classes!
     assert_equal %w(Meta::Info::Only), classes.map { |x| x.to_s }
+    Object.__send__ :remove_const, :Meta
   end
-
 end

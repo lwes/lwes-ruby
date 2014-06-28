@@ -66,4 +66,101 @@ class TestEvent < Test::Unit::TestCase
     ensure
       receiver.close
   end
+
+  def test_subclass_aset_aref
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
+    tmp = LWES::Event.subclass :name => "Event1", :db => tdb
+    e = tmp.new
+    assert_equal({}, e.to_hash)
+    vals = {
+      :t_bool => true,
+      :t_int16 => -1000,
+      :t_uint16 => 1000,
+      :t_int32 => -64444,
+      :t_uint32 => 64444,
+      :t_int64 => 10_000_000_000,
+      :t_uint64 => 10_000_000_000,
+      :t_ip_addr => "192.168.0.1",
+      :t_string => "STRING",
+      :enc => 0,
+      :st => "ruby",
+    }
+    vals.each do |k,v|
+      assert_nothing_raised { e[k.to_s] = v }
+      assert_equal v, e[k.to_s], e.to_hash.inspect
+    end
+
+    e2 = tmp.new
+    vals.each do |k,v|
+      assert_nothing_raised { e2[k] = v }
+      assert_equal v, e2[k], e2.to_hash.inspect
+    end
+    assert_equal e2.to_hash, e.to_hash
+    e3 = tmp.new
+    vals.each do |k,v|
+      assert_nothing_raised { e3.__send__ "#{k}=", v }
+      assert_equal v, e3.__send__(k), e3.to_hash.inspect
+    end
+    assert_equal e3.to_hash, e.to_hash
+  end
+
+  def test_merge
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
+    tmp = LWES::Event.subclass :name => "Event1", :db => tdb
+    e = tmp.new.merge :t_string => "merged"
+    assert_equal "merged", e.t_string
+  end
+
+  def test_init_copy
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
+    tmp = LWES::Event.subclass :name => "Event1", :db => tdb
+    a = tmp.new
+    b = a.dup
+    assert_equal a.to_hash, b.to_hash
+    a.t_string = "HELLO"
+    assert_equal "HELLO", a.t_string
+    assert_nil b.t_string
+    c = a.dup
+    assert_equal "HELLO", c.t_string
+  end
+
+  def test_emit_receive_subclassed
+    receiver = UDPSocket.new
+    receiver.bind(nil, @options[:port])
+    emitter = LWES::Emitter.new(@options)
+    tmp = { :t_string => 'hello' }
+
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
+    ev1 = LWES::Event.subclass :name => "Event1", :db => tdb
+    emitter.emit "Event1", tmp
+    buf, _ = receiver.recvfrom(65536)
+    parsed = LWES::Event.parse(buf)
+    assert_instance_of ev1, parsed
+    assert_equal parsed.to_hash, ev1.new(tmp).to_hash
+    ensure
+      receiver.close
+  end
+
+  def test_emit_class_from_hash_subclassed
+    receiver = UDPSocket.new
+    receiver.bind(nil, @options[:port])
+    emitter = LWES::Emitter.new(@options)
+    tmp = { :t_string => 'hello' }
+
+    tdb = LWES::TypeDB.new("#{File.dirname(__FILE__)}/test1.esf")
+    ev1 = LWES::Event.subclass :name => "Event1", :db => tdb
+    emitter.emit ev1, tmp
+    buf, _ = receiver.recvfrom(65536)
+    parsed = LWES::Event.parse(buf)
+    assert_instance_of ev1, parsed
+    assert_equal parsed.to_hash, ev1.new(tmp).to_hash
+    ensure
+      receiver.close
+  end
+
+  def teardown
+    new_classes = LWES::Event::CLASSES
+    new_classes.each_key { |k| Object.__send__ :remove_const, k.to_sym }
+    new_classes.clear
+  end
 end

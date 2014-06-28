@@ -59,9 +59,7 @@ class TestStruct < Test::Unit::TestCase
     assert_equal "EVENT_BOOL", b.name
     assert_equal false, b.const_get(:HAVE_ENCODING)
 
-    e = assert_raises(RuntimeError) {
-      LWES::Struct.new(:file=>MULTI_EVENT_ESF)
-    }
+    assert_raises(RuntimeError) { LWES::Struct.new(:file=>MULTI_EVENT_ESF) }
   end
 
   def test_new_with_type_db
@@ -139,6 +137,7 @@ class TestStruct < Test::Unit::TestCase
                          :class=>:Init,
                          :name=>:Event1,
                          :parent=>Dummy)
+    assert_kind_of Class, a
     y = Dummy::Init.new(:t_ip_addr => "192.168.0.1", :t_bool => true)
     assert_equal "192.168.0.1", y.t_ip_addr
     assert_equal true, y.t_bool
@@ -149,6 +148,7 @@ class TestStruct < Test::Unit::TestCase
                          :class=> :LWES_Blah,
                          :name=>:Event1,
                          :defaults => { :enc => 1 })
+    assert_kind_of Class, a
     y = LWES_Blah.new
     assert_equal 1, y.enc
   end
@@ -158,6 +158,7 @@ class TestStruct < Test::Unit::TestCase
                          :class=> :LWES_Foo,
                          :name=>:Event1,
                          :defaults => { :enc => 1 })
+    assert_kind_of Class, a
     y = LWES_Foo.new(:enc => 2)
     assert_equal 2, y.enc
   end
@@ -166,6 +167,7 @@ class TestStruct < Test::Unit::TestCase
     a = LWES::Struct.new(:file=>ESF_FILE,
                          :class=> :LWES_New,
                          :name=>:Event1)
+    assert_kind_of Class, a
     y = LWES_Foo.new(true, -16, -32, -64, "127.0.0.1", "HI", 16, 32, 64)
     assert_equal(true, y.t_bool)
     assert_equal(-16, y.t_int16)
@@ -183,6 +185,7 @@ class TestStruct < Test::Unit::TestCase
                          :class=> :LWES_Skip,
                          :name=>:Event1,
                          :skip => %w(SenderIP SenderPort SiteID ReceiptTime))
+    assert_kind_of Class, a
     y = LWES_Skip.new
     assert ! y.respond_to?(:SenderIP)
     assert ! y.respond_to?(:SenderPort)
@@ -197,6 +200,7 @@ class TestStruct < Test::Unit::TestCase
                          :class=> :LWES_SkipRe,
                          :name=>:Event1,
                          :skip => %r(\AS))
+    assert_kind_of Class, a
     y = LWES_SkipRe.new
     assert ! y.respond_to?(:SenderIP)
     assert ! y.respond_to?(:SenderPort)

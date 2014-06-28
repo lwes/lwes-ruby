@@ -8,110 +8,46 @@ static ID
   sym_ip_addr;
 static ID id_to_i;
 
-void lwesrb_dump_type(LWES_BYTE type, LWES_BYTE_P buf, size_t *off)
-{
-	if (marshall_BYTE(type, buf, MAX_MSG_SIZE, off) > 0)
-		return;
-	rb_raise(rb_eRuntimeError, "failed to dump type=%02x", (unsigned)type);
-}
-
 static int dump_uint16(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	int32_t tmp = NUM2INT(val);
-
-	if (tmp < 0)
-		rb_raise(rb_eRangeError, ":uint16 negative: %d", tmp);
-	if (tmp > UINT16_MAX)
-		rb_raise(rb_eRangeError, ":uint16 too large: %d", tmp);
-
 	lwesrb_dump_type(LWES_U_INT_16_TOKEN, buf, off);
-	return marshall_U_INT_16((LWES_U_INT_16)tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_U_INT_16(lwesrb_uint16(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_int16(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	int32_t tmp = NUM2INT(val);
-
-	if (tmp > INT16_MAX)
-		rb_raise(rb_eRangeError, ":int16 too large: %i", tmp);
-	if (tmp < INT16_MIN)
-		rb_raise(rb_eRangeError, ":int16 too small: %i", tmp);
-
 	lwesrb_dump_type(LWES_INT_16_TOKEN, buf, off);
-	return marshall_INT_16((LWES_INT_16)tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_INT_16(lwesrb_int16(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_uint32(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	LONG_LONG tmp = NUM2LL(val);
-
-	if (tmp < 0)
-		rb_raise(rb_eRangeError, ":uint32 negative: %lli", tmp);
-	if (tmp > UINT32_MAX)
-		rb_raise(rb_eRangeError, ":uint32 too large: %lli", tmp);
-
 	lwesrb_dump_type(LWES_U_INT_32_TOKEN, buf, off);
-	return marshall_U_INT_32((LWES_U_INT_32)tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_U_INT_32(lwesrb_uint32(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_int32(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	LONG_LONG tmp = NUM2LL(val);
-
-	if (tmp > INT32_MAX)
-		rb_raise(rb_eRangeError, ":int32 too large: %lli", tmp);
-	if (tmp < INT32_MIN)
-		rb_raise(rb_eRangeError, ":int32 too small: %lli", tmp);
-
 	lwesrb_dump_type(LWES_INT_32_TOKEN, buf, off);
-	return marshall_INT_32((LWES_INT_32)tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_INT_32(lwesrb_int32(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_uint64(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	unsigned LONG_LONG tmp = NUM2ULL(val); /* can raise RangeError */
-	ID type = TYPE(val);
-
-	if ((type == T_FIXNUM && FIX2LONG(val) < 0) ||
-	    (type == T_BIGNUM && RTEST(rb_funcall(val, '<', 1, INT2FIX(0))))) {
-		volatile VALUE raise_inspect;
-
-		rb_raise(rb_eRangeError, ":uint64 negative: %s",
-		         RAISE_INSPECT(val));
-	}
-
 	lwesrb_dump_type(LWES_U_INT_64_TOKEN, buf, off);
-	return marshall_U_INT_64((LWES_U_INT_64)tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_U_INT_64(lwesrb_uint64(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_int64(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	LONG_LONG tmp = NUM2LL(val); /* can raise RangeError */
-
 	lwesrb_dump_type(LWES_INT_64_TOKEN, buf, off);
-	return marshall_INT_64((LWES_INT_64)tmp, buf, MAX_MSG_SIZE, off);
+	return marshall_INT_64(lwesrb_int64(val), buf, MAX_MSG_SIZE, off);
 }
 
 static int dump_ip_addr(VALUE val, LWES_BYTE_P buf, size_t *off)
 {
-	LWES_IP_ADDR addr;
-	volatile VALUE raise_inspect;
-
-	switch (TYPE(val)) {
-	case T_STRING:
-		addr.s_addr = inet_addr(RSTRING_PTR(val));
-		break;
-	case T_FIXNUM:
-	case T_BIGNUM:
-		addr.s_addr = htonl(NUM2UINT(val));
-		break;
-	default:
-		rb_raise(rb_eTypeError,
-		         ":ip_addr address must be String or Integer: %s",
-		         RAISE_INSPECT(val));
-	}
 	lwesrb_dump_type(LWES_IP_ADDR_TOKEN, buf, off);
-	return marshall_IP_ADDR(addr, buf, MAX_MSG_SIZE, off);
+	return marshall_IP_ADDR(lwesrb_ip_addr(val), buf, MAX_MSG_SIZE, off);
 }
 
 /* simple type => function dispatch map */
@@ -175,7 +111,6 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 	volatile VALUE raise_inspect;
 	int i, rv;
 	struct _type_fn_map *head;
-	VALUE *ary;
 	ID type;
 
 	assert(TYPE(array) == T_ARRAY && "need array here");
@@ -183,15 +118,14 @@ void lwesrb_dump_num_ary(VALUE array, LWES_BYTE_P buf, size_t *off)
 	if (RARRAY_LEN(array) != 2)
 		rb_raise(rb_eArgError, "expected a two element array");
 
-	ary = RARRAY_PTR(array);
-	type = ary[0];
+	type = rb_ary_entry(array, 0);
 
 	i = sizeof(type_fn_map) / sizeof(type_fn_map[0]);
 	for (head = type_fn_map; --i >= 0; head++) {
 		if (head->type != type)
 			continue;
 
-		rv = head->fn(ary[1], buf, off);
+		rv = head->fn(rb_ary_entry(array, 1), buf, off);
 		if (rv > 0)
 			return;
 

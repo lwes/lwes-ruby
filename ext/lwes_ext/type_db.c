@@ -2,48 +2,45 @@
 
 VALUE cLWES_TypeDB;
 
-struct _tdb {
-	struct lwes_event_type_db *db;
-};
-
 static void tdb_free(void *ptr)
 {
-	struct _tdb *tdb = ptr;
+	struct lwes_event_type_db *db = ptr;
 
-	if (tdb->db)
-		lwes_event_type_db_destroy(tdb->db);
-	xfree(ptr);
+	if (db)
+		lwes_event_type_db_destroy(db);
 }
 
 static VALUE tdb_alloc(VALUE klass)
 {
-	struct _tdb *tdb;
-
-	return Data_Make_Struct(klass, struct _tdb, NULL, tdb_free, tdb);
+	return Data_Wrap_Struct(klass, NULL, tdb_free, NULL);
 }
 
+/*
+ * call-seq:
+ *
+ *	LWES::TypeDB.new("events.esf") -> LWES::TypeDB
+ *
+ * Initializes a new TypeDB object based on the path to a given ESF file.
+ */
 static VALUE tdb_init(VALUE self, VALUE path)
 {
-	struct _tdb *tdb;
+	struct lwes_event_type_db *db = DATA_PTR(self);
 	int gc_retry = 1;
+	char *cpath = StringValueCStr(path);
 
-	if (TYPE(path) != T_STRING)
-		rb_raise(rb_eArgError, "path must be a string");
-
-	Data_Get_Struct(self, struct _tdb, tdb);
-	if (tdb->db)
+	if (db)
 		rb_raise(rb_eRuntimeError, "ESF already initialized");
 retry:
-	tdb->db = lwes_event_type_db_create(RSTRING_PTR(path));
-	if (!tdb->db) {
+	db = lwes_event_type_db_create(cpath);
+	if (!db) {
 		if (--gc_retry == 0) {
 			rb_gc();
 			goto retry;
 		}
 		rb_raise(rb_eRuntimeError,
-		         "failed to create type DB for LWES file %s",
-		         RSTRING_PTR(path));
+		         "failed to create type DB for LWES file %s", cpath);
 	}
+	DATA_PTR(self) = db;
 
 	return Qnil;
 }
@@ -100,28 +97,27 @@ static VALUE event_def_ary(struct lwes_hash *hash)
 
 struct lwes_event_type_db * lwesrb_get_type_db(VALUE self)
 {
-	struct _tdb *tdb;
+	struct lwes_event_type_db *db = DATA_PTR(self);
 
-	Data_Get_Struct(self, struct _tdb, tdb);
-	if (! tdb->db) {
+	if (!db) {
 		volatile VALUE raise_inspect;
 		rb_raise(rb_eRuntimeError,
 			 "couldn't get lwes_type_db from %s",
 			 RAISE_INSPECT(self));
 	}
-	return tdb->db;
+	return db;
 }
 
+/* :nodoc: */
 static VALUE tdb_to_hash(VALUE self)
 {
-	struct _tdb *tdb;
+	struct lwes_event_type_db *db = DATA_PTR(self);
 	VALUE rv = rb_hash_new();
 	struct lwes_hash *events;
 	struct lwes_hash_enumeration e;
 
-	Data_Get_Struct(self, struct _tdb, tdb);
-	assert(tdb->db && tdb->db->events && "tdb not initialized");
-	events = tdb->db->events;
+	assert(db && db->events && "tdb not initialized");
+	events = db->events;
 
 	if (!lwes_hash_keys(events, &e))
 		rb_raise(rb_eRuntimeError, "couldn't get type_db events");
@@ -151,7 +147,7 @@ void lwesrb_init_type_db(void)
 {
 	VALUE mLWES = rb_define_module("LWES");
 	cLWES_TypeDB = rb_define_class_under(mLWES, "TypeDB", rb_cObject);
-	rb_define_method(cLWES_TypeDB, "initialize", tdb_init, 1);
+	rb_define_private_method(cLWES_TypeDB, "initialize", tdb_init, 1);
 	rb_define_method(cLWES_TypeDB, "to_hash", tdb_to_hash, 0);
 	rb_define_alloc_func(cLWES_TypeDB, tdb_alloc);
 }
